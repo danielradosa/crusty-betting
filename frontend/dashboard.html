@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sports Numerology API</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">🔮 Sports Numerology</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="#" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <h1>Welcome back, <span id="user-name">User</span>!</h1>
+            <p>Manage your API keys and monitor your usage</p>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Usage Stats Card -->
+            <div class="glass-card dashboard-card">
+                <h3>📊 Usage Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="number" id="today-requests">0</div>
+                        <div class="label">Today</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="month-requests">0</div>
+                        <div class="label">This Month</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="total-requests">0</div>
+                        <div class="label">Total</div>
+                    </div>
+                </div>
+                <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Plan: <span id="user-tier" style="color: var(--gold); font-weight: 600;">Free</span>
+                        <span id="usage-limit" style="float: right;">10 / 10 daily</span>
+                    </p>
+                    <div style="margin-top: 10px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div id="usage-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--purple-light)); transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys Card -->
+            <div class="glass-card dashboard-card">
+                <h3>🔐 API Keys</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                    Use these keys to authenticate your API requests. Keep them secret!
+                </p>
+                <button class="btn btn-primary btn-small" onclick="showCreateKeyModal()">
+                    + Generate New Key
+                </button>
+                
+                <div class="api-keys-list" id="api-keys-list">
+                    <!-- API keys will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Quick Links Card -->
+            <div class="glass-card dashboard-card">
+                <h3>📚 Resources</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
+                        <span style="font-size: 1.5rem; margin-right: 15px;">📖</span>
+                        <div>
+                            <div style="font-weight: 600;">API Documentation</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">View endpoints & examples</div>
+                        </div>
+                    </a>
+                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
+                        <span style="font-size: 1.5rem; margin-right: 15px;">💻</span>
+                        <div>
+                            <div style="font-weight: 600;">Code Examples</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Python, JavaScript, & more</div>
+                        </div>
+                    </a>
+                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
+                        <span style="font-size: 1.5rem; margin-right: 15px;">🎾</span>
+                        <div>
+                            <div style="font-weight: 600;">Try Demo</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Test the API without code</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Account Info Card -->
+            <div class="glass-card dashboard-card">
+                <h3>👤 Account</h3>
+                <div style="margin-bottom: 20px;">
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Email</div>
+                    <div id="account-email" style="font-weight: 500;">-</div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Member Since</div>
+                    <div id="member-since">-</div>
+                </div>
+                <div>
+                    <button class="btn btn-secondary btn-small" onclick="showUpgradeModal()" id="upgrade-btn">
+                        Upgrade to Pro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create API Key Modal -->
+    <div class="modal-overlay" id="create-key-modal">
+        <div class="modal">
+            <h3>Generate New API Key</h3>
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Key Name (optional)</label>
+                <input type="text" id="key-name" placeholder="e.g., Production, Development">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeCreateKeyModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="generateApiKey()">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Show API Key Modal -->
+    <div class="modal-overlay" id="show-key-modal">
+        <div class="modal">
+            <h3>🔑 Your New API Key</h3>
+            <p style="color: var(--text-secondary); margin: 15px 0;">
+                Copy this key now. You won't be able to see it again!
+            </p>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; border: 1px solid var(--gold);">
+                <span id="new-api-key"></span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 20px; width: 100%;" onclick="copyApiKey()">
+                Copy to Clipboard
+            </button>
+            <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;" onclick="closeShowKeyModal()">
+                Done
+            </button>
+        </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div class="modal-overlay" id="upgrade-modal">
+        <div class="modal">
+            <h3>🚀 Upgrade to Pro</h3>
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--gold);">$49<span style="font-size: 1rem; color: var(--text-secondary);">/month</span></div>
+            </div>
+            <ul style="list-style: none; color: var(--text-secondary);">
+                <li style="padding: 8px 0;">✓ Unlimited predictions</li>
+                <li style="padding: 8px 0;">✓ All sports supported</li>
+                <li style="padding: 8px 0;">✓ Priority support</li>
+                <li style="padding: 8px 0;">✓ Historical data</li>
+            </ul>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeUpgradeModal()">Maybe Later</button>
+                <button class="btn btn-primary" onclick="processUpgrade()">Upgrade Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            loadApiKeys();
+            loadUsageStats();
+        });
+
+        // Load user data
+        function loadUserData() {
+            document.getElementById('user-name').textContent = user.name || 'User';
+            document.getElementById('account-email').textContent = user.email || '-';
+            document.getElementById('user-tier').textContent = (user.tier || 'free').toUpperCase();
+            document.getElementById('member-since').textContent = new Date().toLocaleDateString();
+            
+            if (user.tier === 'pro') {
+                document.getElementById('upgrade-btn').style.display = 'none';
+                document.getElementById('usage-limit').textContent = 'Unlimited';
+            }
+        }
+
+        // Mock API keys data
+        let apiKeys = [];
+
+        // Load API keys
+        async function loadApiKeys() {
+            try {
+                // API call would go here
+                // const response = await fetch('/api-keys', {
+                //     headers: { 'Authorization': 'Bearer ' + token }
+                // });
+                // apiKeys = await response.json();
+                
+                // Mock data for demo
+                apiKeys = [
+                    {
+                        id: 'key_1',
+                        name: 'Default Key',
+                        key: 'sn_live_******************************abcd',
+                        created_at: '2026-02-20T10:30:00Z',
+                        last_used: '2026-02-25T08:15:00Z'
+                    }
+                ];
+                
+                renderApiKeys();
+            } catch (error) {
+                showToast('Failed to load API keys', 'error');
+            }
+        }
+
+        // Render API keys list
+        function renderApiKeys() {
+            const container = document.getElementById('api-keys-list');
+            
+            if (apiKeys.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No API keys yet. Generate one to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = apiKeys.map(key => `
+                <div class="api-key-item">
+                    <div class="api-key-info">
+                        <div class="api-key-name">${key.name || 'Unnamed Key'}</div>
+                        <div class="api-key-value">${key.key}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                            Created: ${new Date(key.created_at).toLocaleDateString()}
+                            ${key.last_used ? `• Last used: ${new Date(key.last_used).toLocaleDateString()}` : ''}
+                        </div>
+                    </div>
+                    <div class="api-key-actions">
+                        <button class="btn btn-danger btn-small" onclick="revokeKey('${key.id}')">Revoke</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show create key modal
+        function showCreateKeyModal() {
+            document.getElementById('create-key-modal').classList.add('show');
+            document.getElementById('key-name').value = '';
+            document.getElementById('key-name').focus();
+        }
+
+        // Close create key modal
+        function closeCreateKeyModal() {
+            document.getElementById('create-key-modal').classList.remove('show');
+        }
+
+        // Generate new API key
+        async function generateApiKey() {
+            const name = document.getElementById('key-name').value.trim();
+            
+            try {
+                // API call would go here
+                // const response = await fetch('/api-keys', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Authorization': 'Bearer ' + token,
+                //         'Content-Type': 'application/json'
+                //     },
+                //     body: JSON.stringify({ name: name || 'My App' })
+                // });
+                // const data = await response.json();
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // Generate mock key
+                const newKey = 'sn_live_' + Array(40).fill(0).map(() => 
+                    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]
+                ).join('');
+                
+                // Add to list
+                apiKeys.push({
+                    id: 'key_' + Date.now(),
+                    name: name || 'My App',
+                    key: newKey.substring(0, 20) + '******************************' + newKey.substring(-4),
+                    created_at: new Date().toISOString(),
+                    last_used: null
+                });
+                
+                closeCreateKeyModal();
+                
+                // Show the new key
+                document.getElementById('new-api-key').textContent = newKey;
+                document.getElementById('show-key-modal').classList.add('show');
+                
+                renderApiKeys();
+                
+            } catch (error) {
+                showToast('Failed to generate API key', 'error');
+            }
+        }
+
+        // Close show key modal
+        function closeShowKeyModal() {
+            document.getElementById('show-key-modal').classList.remove('show');
+        }
+
+        // Copy API key to clipboard
+        function copyApiKey() {
+            const key = document.getElementById('new-api-key').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                showToast('API key copied to clipboard!');
+            });
+        }
+
+        // Revoke API key
+        async function revokeKey(keyId) {
+            if (!confirm('Are you sure? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                // API call would go here
+                // await fetch(`/api-keys/${keyId}`, {
+                //     method: 'DELETE',
+                //     headers: { 'Authorization': 'Bearer ' + token }
+                // });
+                
+                apiKeys = apiKeys.filter(k => k.id !== keyId);
+                renderApiKeys();
+                showToast('API key revoked successfully');
+            } catch (error) {
+                showToast('Failed to revoke API key', 'error');
+            }
+        }
+
+        // Load usage stats
+        async function loadUsageStats() {
+            try {
+                // API call would go here
+                // const response = await fetch('/api/v1/usage', {
+                //     headers: { 'Authorization': 'Bearer ' + token }
+                // });
+                // const stats = await response.json();
+                
+                // Mock stats
+                const stats = {
+                    today: 7,
+                    month: 143,
+                    total: 1256,
+                    limit: user.tier === 'pro' ? null : 10
+                };
+                
+                document.getElementById('today-requests').textContent = stats.today;
+                document.getElementById('month-requests').textContent = stats.month;
+                document.getElementById('total-requests').textContent = stats.total;
+                
+                // Update usage bar
+                if (stats.limit) {
+                    const percentage = (stats.today / stats.limit) * 100;
+                    document.getElementById('usage-bar').style.width = percentage + '%';
+                    document.getElementById('usage-limit').textContent = `${stats.today} / ${stats.limit} daily`;
+                    
+                    if (percentage >= 90) {
+                        document.getElementById('usage-bar').style.background = 'var(--error)';
+                    }
+                } else {
+                    document.getElementById('usage-bar').style.width = '100%';
+                }
+                
+            } catch (error) {
+                console.error('Failed to load usage stats:', error);
+            }
+        }
+
+        // Show upgrade modal
+        function showUpgradeModal() {
+            document.getElementById('upgrade-modal').classList.add('show');
+        }
+
+        // Close upgrade modal
+        function closeUpgradeModal() {
+            document.getElementById('upgrade-modal').classList.remove('show');
+        }
+
+        // Process upgrade
+        async function processUpgrade() {
+            showToast('Redirecting to payment...');
+            // In production, redirect to Stripe/PayPal
+            setTimeout(() => {
+                closeUpgradeModal();
+            }, 1500);
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

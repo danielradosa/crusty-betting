@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Sports Numerology API</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="logo">🔮 Sports Numerology</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="login.html" class="btn btn-secondary">Sign In</a>
+        </div>
+    </nav>
+
+    <!-- Auth Container -->
+    <div class="auth-container">
+        <div class="glass-card auth-card">
+            <h2>Create Account</h2>
+            <p class="auth-subtitle">Start predicting match outcomes today</p>
+            
+            <div class="error-message" id="error-message"></div>
+            
+            <form class="auth-form" id="signup-form" onsubmit="handleSignup(event)">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        name="name" 
+                        placeholder="John Doe"
+                        required
+                        autocomplete="name"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="you@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="••••••••"
+                        required
+                        minlength="8"
+                        autocomplete="new-password"
+                        oninput="checkPasswordStrength()"
+                    >
+                    <small id="password-hint" style="color: var(--text-secondary); margin-top: 5px; display: block;">
+                        Must be at least 8 characters
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        name="confirm-password" 
+                        placeholder="••••••••"
+                        required
+                        autocomplete="new-password"
+                    >
+                </div>
+                
+                <div class="form-group" style="flex-direction: row; align-items: flex-start; gap: 10px;">
+                    <input 
+                        type="checkbox" 
+                        id="terms" 
+                        required
+                        style="width: auto; margin-top: 3px;"
+                    >
+                    <label for="terms" style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                        I agree to the <a href="#" style="color: var(--purple-light);">Terms of Service</a> and 
+                        <a href="#" style="color: var(--purple-light);">Privacy Policy</a>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="signup-btn">
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        // Hide error message
+        function hideError() {
+            const errorEl = document.getElementById('error-message');
+            errorEl.classList.remove('show');
+        }
+
+        // Check password strength
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const hint = document.getElementById('password-hint');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/)) strength++;
+            if (password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            
+            const colors = ['var(--error)', 'var(--error)', 'var(--warning)', '#00d26a', '#00d26a'];
+            const texts = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
+            
+            hint.style.color = colors[strength - 1] || 'var(--text-secondary)';
+            hint.textContent = strength > 0 ? `Strength: ${texts[strength - 1]}` : 'Must be at least 8 characters';
+        }
+
+        // Handle signup form submission
+        async function handleSignup(event) {
+            event.preventDefault();
+            hideError();
+            
+            const btn = document.getElementById('signup-btn');
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            // Validation
+            if (!name || !email || !password || !confirmPassword) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            // Name validation
+            if (name.length < 2) {
+                showError('Please enter your full name');
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            // Password validation
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            
+            try {
+                // API call to signup endpoint
+                // const response = await fetch('/api/v1/auth/register', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ name, email, password })
+                // });
+                
+                // const data = await response.json();
+                
+                // if (!response.ok) {
+                //     throw new Error(data.message || 'Registration failed');
+                // }
+                
+                // Simulate API call for now
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Mock successful signup
+                const mockToken = 'mock_jwt_token_' + Date.now();
+                const mockUser = {
+                    id: '123',
+                    email: email,
+                    name: name,
+                    tier: 'free'
+                };
+                
+                // Store auth data
+                localStorage.setItem('token', mockToken);
+                localStorage.setItem('user', JSON.stringify(mockUser));
+                
+                showToast('Account created successfully!');
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 500);
+                
+            } catch (error) {
+                showError(error.message || 'Failed to create account. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('token')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

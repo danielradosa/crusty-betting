@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Numerology API - Predict Match Outcomes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">🔮 Sports Numerology</div>
+        <div class="nav-links">
+            <a href="#demo">Demo</a>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="login.html" class="btn btn-secondary">Sign In</a>
+            <a href="signup.html" class="btn btn-primary">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Predict Sports Matches with Numerology</h1>
+        <p class="subtitle">Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.</p>
+        <div class="hero-cta">
+            <a href="#demo" class="btn btn-primary">Try It Free</a>
+            <a href="#features" class="btn btn-secondary">Learn More</a>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo-section" id="demo">
+        <h2 class="section-title">Try the Demo</h2>
+        <div class="demo-container">
+            <div class="glass-card demo-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="player1">Player 1 Name</label>
+                        <input type="text" id="player1" placeholder="e.g., Novak Djokovic">
+                    </div>
+                    <div class="form-group">
+                        <label for="birth1">Player 1 Birth Date</label>
+                        <input type="date" id="birth1">
+                    </div>
+                    <div class="form-group">
+                        <label for="player2">Player 2 Name</label>
+                        <input type="text" id="player2" placeholder="e.g., Rafael Nadal">
+                    </div>
+                    <div class="form-group">
+                        <label for="birth2">Player 2 Birth Date</label>
+                        <input type="date" id="birth2">
+                    </div>
+                    <div class="form-group">
+                        <label for="sport">Sport</label>
+                        <select id="sport">
+                            <option value="tennis">Tennis</option>
+                            <option value="table_tennis">Table Tennis</option>
+                            <option value="boxing">Boxing</option>
+                            <option value="mma">MMA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="match-date">Match Date</label>
+                        <input type="date" id="match-date">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="analyzeMatch()" id="analyze-btn">
+                    🔮 Analyze Match
+                </button>
+                <div class="spinner" id="loading-spinner" style="display: none;"></div>
+                
+                <!-- Results Area -->
+                <div class="results-area" id="results">
+                    <div class="result-winner">🏆 Winner: <span id="winner-name"></span></div>
+                    <p id="result-description"></p>
+                    <div class="result-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Player 1 Score</div>
+                            <div class="stat-value" id="p1-score">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Player 2 Score</div>
+                            <div class="stat-value" id="p2-score">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Confidence</div>
+                            <div class="stat-value" id="confidence">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Lucky Number</div>
+                            <div class="stat-value" id="lucky-number">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <h2 class="section-title">Powerful Features</h2>
+        <div class="features-grid">
+            <div class="glass-card feature-card">
+                <div class="feature-icon">🎾</div>
+                <h3>Multiple Sports</h3>
+                <p>Support for Tennis, Table Tennis, Boxing, and MMA. More sports coming soon based on user demand.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon">🔢</div>
+                <h3>Numerology Calculations</h3>
+                <p>Advanced algorithms analyze birthdates, life path numbers, and match timing for accurate predictions.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Betting Confidence Scores</h3>
+                <p>Get percentage-based confidence ratings to help inform your betting decisions responsibly.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Fast API Response</h3>
+                <p>Sub-second response times with 99.9% uptime. Built for high-frequency trading and betting platforms.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Secure & Private</h3>
+                <p>Enterprise-grade security with API key authentication. Your data is never shared or sold.</p>
+            </div>
+            <div class="glass-card feature-card">
+                <div class="feature-icon">📚</div>
+                <h3>Comprehensive Docs</h3>
+                <p>Detailed API documentation with code examples in Python, JavaScript, and more.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <h2 class="section-title">Simple Pricing</h2>
+        <div class="pricing-grid">
+            <div class="glass-card pricing-card">
+                <h3>Free</h3>
+                <div class="price">$0<span>/month</span></div>
+                <ul class="pricing-features">
+                    <li>10 predictions per day</li>
+                    <li>Tennis & Table Tennis</li>
+                    <li>Basic numerology analysis</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="signup.html" class="btn btn-secondary">Get Started</a>
+            </div>
+            <div class="glass-card pricing-card featured">
+                <h3>Pro</h3>
+                <div class="price">$49<span>/month</span></div>
+                <ul class="pricing-features">
+                    <li>Unlimited predictions</li>
+                    <li>All sports including Boxing & MMA</li>
+                    <li>Advanced numerology analysis</li>
+                    <li>API key authentication</li>
+                    <li>Priority support</li>
+                    <li>Historical data access</li>
+                </ul>
+                <a href="signup.html" class="btn btn-primary">Upgrade to Pro</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="demo-section" style="text-align: center;">
+        <h2 class="section-title">Ready to Predict?</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto;">
+            Join thousands of sports analysts and betting professionals using our numerology API.
+        </p>
+        <a href="signup.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 16px 40px;">
+            Create Free Account
+        </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        // Set default match date to today
+        document.getElementById('match-date').valueAsDate = new Date();
+
+        // Check if user is logged in
+        function isLoggedIn() {
+            return localStorage.getItem('token') !== null;
+        }
+
+        // Get auth headers if logged in
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            return token ? { 'Authorization': 'Bearer ' + token } : {};
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Analyze match function
+        async function analyzeMatch() {
+            const btn = document.getElementById('analyze-btn');
+            const spinner = document.getElementById('loading-spinner');
+            const results = document.getElementById('results');
+            
+            // Get form values
+            const player1 = document.getElementById('player1').value.trim();
+            const birth1 = document.getElementById('birth1').value;
+            const player2 = document.getElementById('player2').value.trim();
+            const birth2 = document.getElementById('birth2').value;
+            const sport = document.getElementById('sport').value;
+            const matchDate = document.getElementById('match-date').value;
+            
+            // Validation
+            if (!player1 || !birth1 || !player2 || !birth2 || !matchDate) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            
+            // Show loading
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            spinner.style.display = 'block';
+            results.classList.remove('show');
+            
+            try {
+                const data = {
+                    player1: player1,
+                    birth1: birth1,
+                    player2: player2,
+                    birth2: birth2,
+                    match_date: matchDate,
+                    sport: sport
+                };
+                
+                // Determine endpoint based on auth status
+                const endpoint = isLoggedIn() 
+                    ? '/api/v1/analyze-match' 
+                    : '/api/v1/analyze-match-demo';
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                };
+                
+                // Simulate API call (replace with actual endpoint)
+                // const response = await fetch(endpoint, {
+                //     method: 'POST',
+                //     headers: headers,
+                //     body: JSON.stringify(data)
+                // });
+                // const result = await response.json();
+                
+                // Simulated response for demo
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Generate mock result
+                const p1Score = Math.floor(Math.random() * 30) + 70;
+                const p2Score = Math.floor(Math.random() * 30) + 70;
+                const winner = p1Score > p2Score ? player1 : player2;
+                const confidence = Math.abs(p1Score - p2Score) + 60;
+                
+                const result = {
+                    winner: winner,
+                    player1_score: p1Score,
+                    player2_score: p2Score,
+                    confidence: Math.min(confidence, 95),
+                    lucky_number: Math.floor(Math.random() * 9) + 1,
+                    description: `${winner} has a stronger numerological alignment with the match date. The life path numbers indicate favorable energy for this competitor.`
+                };
+                
+                // Display results
+                document.getElementById('winner-name').textContent = result.winner;
+                document.getElementById('result-description').textContent = result.description;
+                document.getElementById('p1-score').textContent = result.player1_score + '%';
+                document.getElementById('p2-score').textContent = result.player2_score + '%';
+                document.getElementById('confidence').textContent = result.confidence + '%';
+                document.getElementById('lucky-number').textContent = result.lucky_number;
+                
+                results.classList.add('show');
+                
+                // Create confetti effect
+                createConfetti();
+                
+            } catch (error) {
+                showToast('Analysis failed. Please try again.', 'error');
+                console.error('Analysis error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔮 Analyze Match';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Confetti effect
+        function createConfetti() {
+            const colors = ['#ffd700', '#6c5ce7', '#00d26a', '#ff4757'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
