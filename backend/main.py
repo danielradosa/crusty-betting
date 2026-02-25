@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 import os
+import json
 from collections import defaultdict
 
 from database import create_tables, get_db, User, APIKey
@@ -17,8 +18,88 @@ from auth import (
 )
 from numerology import analyze_match
 
-# In-memory store for demo rate limiting (IP -> {count, reset_time})
-demo_usage = defaultdict(lambda: {"count": 0, "reset_time": datetime.utcnow() + timedelta(days=1)})
+# File-based rate limiting storage
+RATE_LIMIT_FILE = "/tmp/demo_rate_limits.json"
+
+def load_rate_limits():
+    """Load rate limits from file"""
+    try:
+        if os.path.exists(RATE_LIMIT_FILE):
+            with open(RATE_LIMIT_FILE, 'r') as f:
+                data = json.load(f)
+                # Convert string timestamps back to datetime
+                for ip, info in data.items():
+                    info['reset_time'] = datetime.fromisoformat(info['reset_time'])
+                return data
+    except Exception:
+        pass
+    return {}
+
+def save_rate_limits(data):
+    """Save rate limits to file"""
+    try:
+        # Convert datetime to ISO string for JSON serialization
+        serializable = {}
+        for ip, info in data.items():
+            serializable[ip] = {
+                'count': info['count'],
+                'reset_time': info['reset_time'].isoformat()
+            }
+        with open(RATE_LIMIT_FILE, 'w') as f:
+            json.dump(serializable, f)
+    except Exception as e:
+        print(f"Error saving rate limits: {e}")
+
+def get_client_ip(req: Request):
+    """Extract client IP from request"""
+    # Try X-Forwarded-For first (for proxies/load balancers)
+    forwarded = req.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    # Try X-Real-IP
+    real_ip = req.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    # Fall back to direct connection
+    if req.client:
+        return req.client.host
+    return "unknown"
+
+def check_demo_rate_limit(client_ip: str) -> tuple[bool, int, int]:
+    """
+    Check if client has exceeded demo rate limit
+    Returns: (allowed, current_count, remaining)
+    """
+    demo_usage = load_rate_limits()
+    now = datetime.utcnow()
+    
+    # Get or create entry for this IP
+    if client_ip not in demo_usage:
+        demo_usage[client_ip] = {
+            "count": 0,
+            "reset_time": now + timedelta(days=1)
+        }
+    
+    ip_data = demo_usage[client_ip]
+    
+    # Reset if day has passed
+    if now > ip_data["reset_time"]:
+        ip_data["count"] = 0
+        ip_data["reset_time"] = now + timedelta(days=1)
+    
+    # Check limit (max 5 per day)
+    if ip_data["count"] >= 5:
+        save_rate_limits(demo_usage)
+        return False, ip_data["count"], 0
+    
+    # Increment count
+    ip_data["count"] += 1
+    remaining = 5 - ip_data["count"]
+    
+    # Save updated limits
+    save_rate_limits(demo_usage)
+    
+    return True, ip_data["count"], remaining
 
 # Create app
 app = FastAPI(
@@ -340,29 +421,16 @@ def analyze_match_endpoint(
 def demo_analyze(request: DemoRequest, req: Request):
     """Demo endpoint - max 5 uses per IP per day"""
     # Get client IP
-    client_ip = req.headers.get("X-Forwarded-For", req.client.host)
-    if isinstance(client_ip, str) and "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
+    client_ip = get_client_ip(req)
     
-    # Check and update rate limit
-    now = datetime.utcnow()
-    ip_data = demo_usage[client_ip]
+    # Check rate limit
+    allowed, count, remaining = check_demo_rate_limit(client_ip)
     
-    # Reset if day has passed
-    if now > ip_data["reset_time"]:
-        ip_data["count"] = 0
-        ip_data["reset_time"] = now + timedelta(days=1)
-    
-    # Check limit
-    if ip_data["count"] >= 5:
+    if not allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Demo limit reached (5 per day). Sign up for unlimited access."
         )
-    
-    # Increment count
-    ip_data["count"] += 1
-    remaining = 5 - ip_data["count"]
     
     try:
         result = analyze_match(
@@ -377,6 +445,7 @@ def demo_analyze(request: DemoRequest, req: Request):
         result["demo"] = True
         result["note"] = f"This is a demo ({remaining} free tries remaining today). Sign up for unlimited access."
         result["remaining_tries"] = remaining
+        result["used_today"] = count
         return result
         
     except Exception as e:
