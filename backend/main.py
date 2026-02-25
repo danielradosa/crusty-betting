@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
@@ -527,33 +527,37 @@ def get_usage_stats(
     # This month
     month_start = datetime.combine(today.replace(day=1), datetime.min.time())
     
-    # Count requests
+    # Count ALL requests (both success and fail) for today to show true usage
     today_count = db.query(UsageLog).filter(
         UsageLog.user_id == current_user.id,
         UsageLog.timestamp >= today_start,
-        UsageLog.timestamp <= today_end,
-        UsageLog.success == True
+        UsageLog.timestamp <= today_end
     ).count()
     
     month_count = db.query(UsageLog).filter(
         UsageLog.user_id == current_user.id,
         UsageLog.timestamp >= month_start,
-        UsageLog.timestamp <= today_end,
-        UsageLog.success == True
+        UsageLog.timestamp <= today_end
     ).count()
     
     total_count = db.query(UsageLog).filter(
-        UsageLog.user_id == current_user.id,
-        UsageLog.success == True
+        UsageLog.user_id == current_user.id
     ).count()
     
-    return {
-        "today": today_count,
-        "this_month": month_count,
-        "total": total_count,
-        "limit": 10,
-        "reset_time": today_end.isoformat()
-    }
+    return JSONResponse(
+        content={
+            "today": today_count,
+            "this_month": month_count,
+            "total": total_count,
+            "limit": 10,
+            "reset_time": today_end.isoformat()
+        },
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 # Player database endpoints
 @app.get("/api/v1/players")
@@ -841,37 +845,39 @@ if os.path.exists(static_path):
 else:
     print(f"Warning: Static path not found: {static_path}")
 
+def serve_html_no_cache(file_path: str):
+    """Serve HTML file with cache-busting headers"""
+    try:
+        with open(file_path, 'r') as f:
+            content = f.read()
+        return Response(
+            content=content,
+            media_type="text/html",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    except Exception as e:
+        print(f"Error serving {file_path}: {e}")
+        return {"error": "Page not available", "path": file_path}
+
 @app.get("/")
 def serve_landing():
-    try:
-        return FileResponse(os.path.join(frontend_path, "index.html"))
-    except Exception as e:
-        print(f"Error serving index.html: {e}")
-        return {"message": "Sports Numerology API", "status": "running", "frontend_path": frontend_path}
+    return serve_html_no_cache(os.path.join(frontend_path, "index.html"))
 
 @app.get("/dashboard")
 def serve_dashboard():
-    try:
-        return FileResponse(os.path.join(frontend_path, "dashboard.html"))
-    except Exception as e:
-        print(f"Error serving dashboard.html: {e}")
-        return {"error": "Dashboard not available", "path": frontend_path}
+    return serve_html_no_cache(os.path.join(frontend_path, "dashboard.html"))
 
 @app.get("/login")
 def serve_login():
-    try:
-        return FileResponse(os.path.join(frontend_path, "login.html"))
-    except Exception as e:
-        print(f"Error serving login.html: {e}")
-        return {"error": "Login page not available", "path": frontend_path}
+    return serve_html_no_cache(os.path.join(frontend_path, "login.html"))
 
 @app.get("/signup")
 def serve_signup():
-    try:
-        return FileResponse(os.path.join(frontend_path, "signup.html"))
-    except Exception as e:
-        print(f"Error serving signup.html: {e}")
-        return {"error": "Signup page not available", "path": frontend_path}
+    return serve_html_no_cache(os.path.join(frontend_path, "signup.html"))
 
 # Also serve .html versions for direct links
 @app.get("/login.html")

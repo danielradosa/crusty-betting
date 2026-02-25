@@ -4,10 +4,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dashboard - Sports Numerology API</title>
-    <link rel="stylesheet" href="../static/styles.css">
-    <link rel="stylesheet" href="../static/utilities.css">
-    <link rel="stylesheet" href="../static/app.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/utilities.css">
+    <link rel="stylesheet" href="/static/app.css">
 </head>
 
 <body>
@@ -379,8 +382,8 @@
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            // Force full page reload to clear any cached state
-            window.location.replace('index.html?_t=' + Date.now());
+            // Force hard redirect to clear any cached state
+            window.location.replace('index.html?_logout=' + Date.now());
         }
 
         function escapeHtml(str) {

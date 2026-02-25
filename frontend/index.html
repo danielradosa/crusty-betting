@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Sports Numerology API - Predict Match Outcomes</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -179,22 +182,36 @@
     </footer>
 
     <script>
-        // Check auth state
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
-        if (token) {
-            // User is logged in - show dashboard/logout, hide login/signup
-            document.getElementById('login-link').hidden = true;
-            document.getElementById('signup-link').hidden = true;
-            document.getElementById('dashboard-link').hidden = false;
-            document.getElementById('logout-btn').hidden = false;
+        // Check auth state immediately and on page load
+        function updateAuthUI() {
+            const token = localStorage.getItem('token');
+            
+            if (token) {
+                // User is logged in - show dashboard/logout, hide login/signup
+                document.getElementById('login-link').hidden = true;
+                document.getElementById('signup-link').hidden = true;
+                document.getElementById('dashboard-link').hidden = false;
+                document.getElementById('logout-btn').hidden = false;
+            } else {
+                // User is logged out - show login/signup, hide dashboard/logout
+                document.getElementById('login-link').hidden = false;
+                document.getElementById('signup-link').hidden = false;
+                document.getElementById('dashboard-link').hidden = true;
+                document.getElementById('logout-btn').hidden = true;
+            }
         }
+        
+        // Run immediately
+        updateAuthUI();
+        
+        // Also run on page load (in case script runs before DOM ready)
+        document.addEventListener('DOMContentLoaded', updateAuthUI);
         
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.reload();
+            // Force hard redirect to clear any cached state
+            window.location.replace('index.html?_logout=' + Date.now());
         }
 
         async function analyzeMatch() {
