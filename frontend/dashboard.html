@@ -79,6 +79,79 @@
             </article>
         </section>
 
+        <!-- Betting Analysis Form -->
+        <section class="card">
+            <header>
+                <div class="row">
+                    <h2>🔮 Betting Analysis</h2>
+                    <span class="badge">Powered by Numerology</span>
+                </div>
+            </header>
+
+            <form id="analysis-form" onsubmit="runAnalysis(); return false;">
+                <div class="form-row">
+                    <label>Sport</label>
+                    <select id="sport" onchange="clearPlayers()">
+                        <option value="tennis">Tennis</option>
+                        <option value="table-tennis">Table Tennis</option>
+                    </select>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-row">
+                        <label>Player 1</label>
+                        <input type="text" id="player1-search" placeholder="Search player..." 
+                               oninput="searchPlayers(1, this.value)" autocomplete="off"/>
+                        <input type="hidden" id="player1-name" />
+                        <input type="hidden" id="player1-birthdate" />
+                        <div id="player1-results" class="search-results"></div>
+                        <small id="player1-info" class="muted"></small>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Player 2</label>
+                        <input type="text" id="player2-search" placeholder="Search player..." 
+                               oninput="searchPlayers(2, this.value)" autocomplete="off"/>
+                        <input type="hidden" id="player2-name" />
+                        <input type="hidden" id="player2-birthdate" />
+                        <div id="player2-results" class="search-results"></div>
+                        <small id="player2-info" class="muted"></small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Match Date</label>
+                    <input type="date" id="match-date" required />
+                </div>
+
+                <button type="submit" class="cta-primary" id="analyze-btn" style="width: 100%;">
+                    Analyze Match
+                </button>
+            </form>
+
+            <div id="analysis-loading" hidden style="text-align: center; padding: 20px;">
+                <p>Analyzing...</p>
+            </div>
+
+            <article id="analysis-result" hidden class="result-card" style="margin-top: 20px;">
+                <header>
+                    <h3>🏆 Winner: <span id="winner-name"></span></h3>
+                    <span class="badge" id="confidence-badge"></span>
+                </header>
+                <p id="analysis-description"></p>
+                <div class="grid-2" style="margin-top: 15px;">
+                    <div class="stat-box">
+                        <small class="muted">Player 1 Score</small>
+                        <data id="p1-score" style="font-size: 1.5rem; font-weight: bold;"></data>
+                    </div>
+                    <div class="stat-box">
+                        <small class="muted">Player 2 Score</small>
+                        <data id="p2-score" style="font-size: 1.5rem; font-weight: bold;"></data>
+                    </div>
+                </div>
+            </article>
+        </section>
+
         <section class="card">
             <header>
                 <div class="row">
@@ -271,6 +344,120 @@
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[m]));
         }
+
+        // Player search and analysis functions
+        let searchTimeout;
+        
+        async function searchPlayers(playerNum, query) {
+            clearTimeout(searchTimeout);
+            const resultsDiv = document.getElementById(`player${playerNum}-results`);
+            
+            if (query.length < 2) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const sport = document.getElementById('sport').value;
+                    const response = await fetch(`/api/v1/players?q=${encodeURIComponent(query)}&sport=${sport}`);
+                    const players = await response.json();
+                    
+                    resultsDiv.innerHTML = players.map(p => `
+                        <div class="search-result-item" onclick="selectPlayer(${playerNum}, ${p.id}, '${escapeHtml(p.name)}', '${p.birthdate}')">
+                            <strong>${escapeHtml(p.name)}</strong>
+                            <small>${p.country || ''} • ${p.birthdate}</small>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 200);
+        }
+        
+        function selectPlayer(playerNum, id, name, birthdate) {
+            document.getElementById(`player${playerNum}-search`).value = name;
+            document.getElementById(`player${playerNum}-name`).value = name;
+            document.getElementById(`player${playerNum}-birthdate`).value = birthdate;
+            document.getElementById(`player${playerNum}-results`).innerHTML = '';
+            document.getElementById(`player${playerNum}-info`).textContent = `Selected: ${name} (${birthdate})`;
+        }
+        
+        function clearPlayers() {
+            [1, 2].forEach(num => {
+                document.getElementById(`player${num}-search`).value = '';
+                document.getElementById(`player${num}-name`).value = '';
+                document.getElementById(`player${num}-birthdate`).value = '';
+                document.getElementById(`player${num}-results`).innerHTML = '';
+                document.getElementById(`player${num}-info`).textContent = '';
+            });
+        }
+        
+        async function runAnalysis() {
+            const btn = document.getElementById('analyze-btn');
+            const loading = document.getElementById('analysis-loading');
+            const result = document.getElementById('analysis-result');
+            
+            const player1Name = document.getElementById('player1-name').value;
+            const player1Birth = document.getElementById('player1-birthdate').value;
+            const player2Name = document.getElementById('player2-name').value;
+            const player2Birth = document.getElementById('player2-birthdate').value;
+            const matchDate = document.getElementById('match-date').value;
+            const sport = document.getElementById('sport').value;
+            
+            if (!player1Name || !player1Birth || !player2Name || !player2Birth || !matchDate) {
+                alert('Please select both players and match date');
+                return;
+            }
+            
+            btn.disabled = true;
+            loading.hidden = false;
+            result.hidden = true;
+            
+            try {
+                const response = await fetch('/api/v1/analyze-match', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKeys[0]?.api_key || ''
+                    },
+                    body: JSON.stringify({
+                        player1_name: player1Name,
+                        player1_birthdate: player1Birth,
+                        player2_name: player2Name,
+                        player2_birthdate: player2Birth,
+                        match_date: matchDate,
+                        sport: sport
+                    })
+                });
+                
+                if (response.status === 429) {
+                    alert('Daily limit reached (10/day). Upgrade to Pro for unlimited access.');
+                    return;
+                }
+                
+                if (!response.ok) throw new Error('Analysis failed');
+                
+                const data = await response.json();
+                
+                document.getElementById('winner-name').textContent = data.winner_prediction;
+                document.getElementById('confidence-badge').textContent = data.confidence;
+                document.getElementById('analysis-description').textContent = data.analysis_summary;
+                document.getElementById('p1-score').textContent = data.player1?.score || '-';
+                document.getElementById('p2-score').textContent = data.player2?.score || '-';
+                
+                result.hidden = false;
+                updateUsageStats();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                loading.hidden = true;
+            }
+        }
+
+        // Set default date to today
+        document.getElementById('match-date').valueAsDate = new Date();
 
         loadApiKeys();
     </script>

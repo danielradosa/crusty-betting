@@ -47,6 +47,16 @@ class UsageLog(Base):
     # Relationships
     user = relationship("User", back_populates="usage_logs")
 
+class Player(Base):
+    __tablename__ = "players"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    birthdate = Column(String(10), nullable=False)  # YYYY-MM-DD
+    sport = Column(String(50), nullable=False)  # tennis, table-tennis, etc.
+    country = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class DemoUsage(Base):
     __tablename__ = "demo_usage"
     

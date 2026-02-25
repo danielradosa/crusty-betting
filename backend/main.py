@@ -9,7 +9,7 @@ from typing import List, Optional
 import os
 from collections import defaultdict
 
-from database import create_tables, get_db, User, APIKey, DemoUsage
+from database import create_tables, get_db, User, APIKey, DemoUsage, Player
 from auth import (
     get_password_hash, verify_password, create_access_token, 
     get_current_user, get_api_key_user, generate_api_key, 
@@ -554,6 +554,98 @@ def get_usage_stats(
         "limit": 10,
         "reset_time": today_end.isoformat()
     }
+
+# Player database endpoints
+@app.get("/api/v1/players")
+def search_players(
+    q: str = "",
+    sport: str = "",
+    db: Session = Depends(get_db)
+):
+    """Search players by name (autocomplete)"""
+    query = db.query(Player)
+    
+    if q:
+        query = query.filter(Player.name.ilike(f"%{q}%"))
+    
+    if sport:
+        query = query.filter(Player.sport == sport)
+    
+    players = query.limit(10).all()
+    
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "birthdate": p.birthdate,
+            "sport": p.sport,
+            "country": p.country
+        }
+        for p in players
+    ]
+
+@app.get("/api/v1/players/{player_id}")
+def get_player(player_id: int, db: Session = Depends(get_db)):
+    """Get a specific player by ID"""
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    return {
+        "id": player.id,
+        "name": player.name,
+        "birthdate": player.birthdate,
+        "sport": player.sport,
+        "country": player.country
+    }
+
+# Seed players data (run once)
+@app.post("/admin/seed-players")
+def seed_players(db: Session = Depends(get_db)):
+    """Seed initial player database (tennis and table tennis)"""
+    # Check if already seeded
+    existing = db.query(Player).first()
+    if existing:
+        return {"message": "Already seeded", "count": db.query(Player).count()}
+    
+    players = [
+        # Tennis
+        {"name": "Novak Djokovic", "birthdate": "1987-05-22", "sport": "tennis", "country": "Serbia"},
+        {"name": "Carlos Alcaraz", "birthdate": "2003-05-05", "sport": "tennis", "country": "Spain"},
+        {"name": "Jannik Sinner", "birthdate": "2001-08-16", "sport": "tennis", "country": "Italy"},
+        {"name": "Daniil Medvedev", "birthdate": "1996-02-11", "sport": "tennis", "country": "Russia"},
+        {"name": "Alexander Zverev", "birthdate": "1997-04-20", "sport": "tennis", "country": "Germany"},
+        {"name": "Rafael Nadal", "birthdate": "1986-06-03", "sport": "tennis", "country": "Spain"},
+        {"name": "Iga Swiatek", "birthdate": "2001-05-31", "sport": "tennis", "country": "Poland"},
+        {"name": "Aryna Sabalenka", "birthdate": "1998-05-05", "sport": "tennis", "country": "Belarus"},
+        {"name": "Coco Gauff", "birthdate": "2004-03-13", "sport": "tennis", "country": "USA"},
+        {"name": "Elena Rybakina", "birthdate": "1999-06-17", "sport": "tennis", "country": "Kazakhstan"},
+        
+        # Table Tennis
+        {"name": "Fan Zhendong", "birthdate": "1997-01-22", "sport": "table-tennis", "country": "China"},
+        {"name": "Ma Long", "birthdate": "1988-10-20", "sport": "table-tennis", "country": "China"},
+        {"name": "Wang Chuqin", "birthdate": "2000-05-11", "sport": "table-tennis", "country": "China"},
+        {"name": "Tomokazu Harimoto", "birthdate": "2003-06-27", "sport": "table-tennis", "country": "Japan"},
+        {"name": "Lin Shidong", "birthdate": "2005-04-20", "sport": "table-tennis", "country": "China"},
+        {"name": "Liang Jingkun", "birthdate": "1996-10-20", "sport": "table-tennis", "country": "China"},
+        {"name": "Hugo Calderano", "birthdate": "1996-06-22", "sport": "table-tennis", "country": "Brazil"},
+        {"name": "Felix Lebrun", "birthdate": "2006-09-12", "sport": "table-tennis", "country": "France"},
+        {"name": "Alexis Lebrun", "birthdate": "2003-08-27", "sport": "table-tennis", "country": "France"},
+        {"name": "Dimitrij Ovtcharov", "birthdate": "1988-09-02", "sport": "table-tennis", "country": "Germany"},
+        {"name": "Sun Yingsha", "birthdate": "2000-11-04", "sport": "table-tennis", "country": "China"},
+        {"name": "Chen Meng", "birthdate": "1994-01-15", "sport": "table-tennis", "country": "China"},
+        {"name": "Wang Manyu", "birthdate": "1999-02-09", "sport": "table-tennis", "country": "China"},
+        {"name": "Mima Ito", "birthdate": "2000-10-21", "sport": "table-tennis", "country": "Japan"},
+        {"name": "Hina Hayata", "birthdate": "2000-07-07", "sport": "table-tennis", "country": "Japan"},
+    ]
+    
+    for p in players:
+        player = Player(**p)
+        db.add(player)
+    
+    db.commit()
+    
+    return {"message": "Players seeded successfully", "count": len(players)}
 
 # Static files and frontend
 # Handle both local dev and Docker container paths
