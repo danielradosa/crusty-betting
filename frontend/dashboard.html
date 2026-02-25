@@ -237,8 +237,9 @@
 
         async function loadApiKeys() {
             try {
-                const response = await fetch('/api-keys', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/api-keys?_t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
                 });
                 if (!response.ok) throw new Error('Failed to load keys');
 
@@ -296,8 +297,10 @@
 
         async function updateUsageStats() {
             try {
-                const response = await fetch('/api/v1/usage-stats', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                // Add cache-busting timestamp
+                const response = await fetch(`/api/v1/usage-stats?_t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    cache: 'no-store'
                 });
                 
                 if (!response.ok) throw new Error('Failed to load stats');
@@ -376,7 +379,8 @@
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = 'index.html';
+            // Force full page reload to clear any cached state
+            window.location.replace('index.html?_t=' + Date.now());
         }
 
         function escapeHtml(str) {
