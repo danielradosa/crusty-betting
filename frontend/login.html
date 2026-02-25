@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - Sports Numerology API</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <!-- Navigation -->
@@ -137,33 +137,21 @@
             
             try {
                 // API call to login endpoint
-                // const response = await fetch('/api/v1/auth/login', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify({ email, password })
-                // });
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
                 
-                // const data = await response.json();
+                const data = await response.json();
                 
-                // if (!response.ok) {
-                //     throw new Error(data.message || 'Login failed');
-                // }
-                
-                // Simulate API call for now
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Mock successful login
-                const mockToken = 'mock_jwt_token_' + Date.now();
-                const mockUser = {
-                    id: '123',
-                    email: email,
-                    name: 'Demo User',
-                    tier: 'pro'
-                };
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Login failed');
+                }
                 
                 // Store auth data
-                localStorage.setItem('token', mockToken);
-                localStorage.setItem('user', JSON.stringify(mockUser));
+                localStorage.setItem('token', data.access_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
                 
                 showToast('Welcome back!');
                 

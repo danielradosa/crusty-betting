@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Sports Numerology API</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <!-- Navigation -->
@@ -199,33 +199,21 @@
             
             try {
                 // API call to signup endpoint
-                // const response = await fetch('/api/v1/auth/register', {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify({ name, email, password })
-                // });
+                const response = await fetch('/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
                 
-                // const data = await response.json();
+                const data = await response.json();
                 
-                // if (!response.ok) {
-                //     throw new Error(data.message || 'Registration failed');
-                // }
-                
-                // Simulate API call for now
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                // Mock successful signup
-                const mockToken = 'mock_jwt_token_' + Date.now();
-                const mockUser = {
-                    id: '123',
-                    email: email,
-                    name: name,
-                    tier: 'free'
-                };
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Registration failed');
+                }
                 
                 // Store auth data
-                localStorage.setItem('token', mockToken);
-                localStorage.setItem('user', JSON.stringify(mockUser));
+                localStorage.setItem('token', data.access_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
                 
                 showToast('Account created successfully!');
                 

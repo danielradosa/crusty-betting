@@ -1,12 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 import os
+from collections import defaultdict
 
 from database import create_tables, get_db, User, APIKey
 from auth import (
@@ -15,6 +16,9 @@ from auth import (
     check_rate_limit, log_usage
 )
 from numerology import analyze_match
+
+# In-memory store for demo rate limiting (IP -> {count, reset_time})
+demo_usage = defaultdict(lambda: {"count": 0, "reset_time": datetime.utcnow() + timedelta(days=1))
 
 # Create app
 app = FastAPI(
@@ -331,10 +335,35 @@ def analyze_match_endpoint(
             detail=f"Analysis failed: {str(e)}"
         )
 
-# Demo endpoint (no auth required)
+# Demo endpoint (no auth required, max 5 per IP per day)
 @app.post("/api/v1/demo-analyze", response_model=MatchAnalysisResponse)
-def demo_analyze(request: DemoRequest):
-    """Demo endpoint - no authentication required"""
+def demo_analyze(request: DemoRequest, req: Request):
+    """Demo endpoint - max 5 uses per IP per day"""
+    # Get client IP
+    client_ip = req.headers.get("X-Forwarded-For", req.client.host)
+    if isinstance(client_ip, str) and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    
+    # Check and update rate limit
+    now = datetime.utcnow()
+    ip_data = demo_usage[client_ip]
+    
+    # Reset if day has passed
+    if now > ip_data["reset_time"]:
+        ip_data["count"] = 0
+        ip_data["reset_time"] = now + timedelta(days=1)
+    
+    # Check limit
+    if ip_data["count"] >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demo limit reached (5 per day). Sign up for unlimited access."
+        )
+    
+    # Increment count
+    ip_data["count"] += 1
+    remaining = 5 - ip_data["count"]
+    
     try:
         result = analyze_match(
             player1_name=request.player1_name,
@@ -346,7 +375,8 @@ def demo_analyze(request: DemoRequest):
         )
         # Add disclaimer for demo
         result["demo"] = True
-        result["note"] = "This is a demo. Sign up for full API access."
+        result["note"] = f"This is a demo ({remaining} free tries remaining today). Sign up for unlimited access."
+        result["remaining_tries"] = remaining
         return result
         
     except Exception as e:
