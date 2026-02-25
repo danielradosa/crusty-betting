@@ -171,3 +171,63 @@
 .container-md { max-width: 768px; margin-left: auto; margin-right: auto; }
 .container-lg { max-width: 1024px; margin-left: auto; margin-right: auto; }
 .container-xl { max-width: 1280px; margin-left: auto; margin-right: auto; }
+
+/* Additional utilities for fixed positioning */
+.fixed { position: fixed; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.z-50 { z-index: 50; }
+
+/* Text decoration */
+.hover\\:underline:hover { text-decoration: underline; }
+
+/* Background opacity utilities */
+.bg-black\\/50 { background-color: rgba(0, 0, 0, 0.5); }
+.bg-danger\\/20 { background-color: rgba(239, 68, 68, 0.2); }
+
+/* Focus utilities */
+.focus\\:outline-none:focus { outline: none; }
+.focus\\:border-primary:focus { border-color: var(--primary); }
+
+/* Transition utilities */
+.transition { transition: all 0.3s ease; }
+
+/* Shadow */
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4); }
+
+/* Background colors for utilities */
+.bg-danger { background-color: var(--danger); }
+.bg-secondary { background-color: var(--secondary); }
+.bg-primary { background-color: var(--primary); }
+.bg-bg { background-color: var(--bg); }
+.bg-bg-lighter { background-color: var(--bg-lighter); }
+
+/* Text colors */
+.text-danger { color: var(--danger); }
+.text-success { color: var(--secondary); }
+.text-primary-light { color: var(--primary-light); }
+.text-text-muted { color: var(--text-muted); }
+.text-white { color: #ffffff; }
+
+/* Font sizes */
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+
+/* Font weights */
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Border */
+.border { border: 1px solid var(--border); }
+.rounded { border-radius: var(--radius); }
+.rounded-lg { border-radius: var(--radius-lg); }
+
+/* Cursor */
+.cursor-pointer { cursor: pointer; }
+
+/* Hover states */
+.hover\\:text-text:hover { color: var(--text); }

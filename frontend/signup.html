@@ -7,41 +7,29 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/utilities.css">
 </head>
-<body>
+<body class="bg-bg min-h-screen">
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar py-4">
         <div class="container flex justify-between items-center">
-            <a href="index.html" class="logo">🔮 Sports Numerology</a>
-            <div class="nav-links flex items-center gap-4">
-                <a href="index.html">Home</a>
-                <a href="login.html" class="btn btn-secondary">Sign In</a>
+            <a href="index.html" class="logo text-xl font-bold">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-6">
+                <a href="index.html" class="text-text-muted hover:text-text transition">Home</a>
+                <a href="login.html" class="btn btn-secondary px-4 py-2">Sign In</a>
             </div>
         </div>
     </nav>
 
     <!-- Auth Container -->
-    <div class="auth-container flex items-center justify-center min-h-screen">
-        <div class="glass-card auth-card w-full">
-            <h2>Create Account</h2>
-            <p class="auth-subtitle">Start predicting match outcomes today</p>
+    <div class="flex items-center justify-center min-h-screen px-4 py-12">
+        <div class="glass-card w-full max-w-md p-8 rounded-lg">
+            <h2 class="text-2xl font-bold text-center mb-2">Create Account</h2>
+            <p class="text-text-muted text-center mb-6">Start predicting match outcomes today</p>
             
-            <div class="error-message" id="error-message"></div>
+            <div class="error-message hidden bg-danger/20 text-danger p-3 rounded mb-4 text-sm" id="error-message"></div>
             
-            <form class="auth-form" id="signup-form" onsubmit="handleSignup(event)">
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        placeholder="John Doe"
-                        required
-                        autocomplete="name"
-                    >
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email Address</label>
+            <form class="flex flex-col gap-4" id="signup-form" onsubmit="handleSignup(event)">
+                <div class="flex flex-col gap-2">
+                    <label for="email" class="text-sm font-medium">Email Address</label>
                     <input 
                         type="email" 
                         id="email" 
@@ -49,11 +37,12 @@
                         placeholder="you@example.com"
                         required
                         autocomplete="email"
+                        class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none transition"
                     >
                 </div>
                 
-                <div class="form-group">
-                    <label for="password">Password</label>
+                <div class="flex flex-col gap-2">
+                    <label for="password" class="text-sm font-medium">Password</label>
                     <input 
                         type="password" 
                         id="password" 
@@ -63,14 +52,13 @@
                         minlength="8"
                         autocomplete="new-password"
                         oninput="checkPasswordStrength()"
+                        class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none transition"
                     >
-                    <small id="password-hint" style="color: var(--text-secondary); margin-top: 5px; display: block;">
-                        Must be at least 8 characters
-                    </small>
+                    <small id="password-hint" class="text-text-muted text-xs">Must be at least 8 characters</small>
                 </div>
                 
-                <div class="form-group">
-                    <label for="confirm-password">Confirm Password</label>
+                <div class="flex flex-col gap-2">
+                    <label for="confirm-password" class="text-sm font-medium">Confirm Password</label>
                     <input 
                         type="password" 
                         id="confirm-password" 
@@ -78,71 +66,54 @@
                         placeholder="••••••••"
                         required
                         autocomplete="new-password"
+                        class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none transition"
                     >
                 </div>
                 
-                <div class="form-group flex flex-row items-start gap-3">
-                    <input 
-                        type="checkbox" 
-                        id="terms" 
-                        required
-                        class="w-auto mt-1"
-                    >
-                    <label for="terms" class="m-0 text-sm text-secondary">
-                        I agree to the <a href="#" class="text-primary">Terms of Service</a> and 
-                        <a href="#" class="text-primary">Privacy Policy</a>
+                <div class="flex items-start gap-3 mt-2">
+                    <input type="checkbox" id="terms" required class="mt-1">
+                    <label for="terms" class="text-sm text-text-muted">
+                        I agree to the <a href="#" class="text-primary-light hover:underline">Terms of Service</a> and 
+                        <a href="#" class="text-primary-light hover:underline">Privacy Policy</a>
                     </label>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" id="signup-btn">
+                <button type="submit" class="btn btn-primary w-full py-3 mt-2 font-semibold" id="signup-btn">
                     Create Account
                 </button>
             </form>
             
-            <div class="auth-footer">
-                <p>Already have an account? <a href="login.html">Sign in</a></p>
+            <div class="mt-6 text-center">
+                <p class="text-text-muted">Already have an account? <a href="login.html" class="text-primary-light hover:underline">Sign in</a></p>
             </div>
         </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
 
     <script>
-        // API Configuration
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:8000' 
-            : '';
+        const API_BASE_URL = '';
 
-        // Show toast notification
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            toast.className = `p-4 rounded-lg mb-2 text-white ${type === 'success' ? 'bg-secondary' : 'bg-danger'} shadow-lg transition`;
             toast.textContent = message;
             container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => toast.remove(), 3000);
         }
 
-        // Show error message
         function showError(message) {
-            const errorEl = document.getElementById('error-message');
-            errorEl.textContent = message;
-            errorEl.classList.add('show');
+            const el = document.getElementById('error-message');
+            el.textContent = message;
+            el.classList.remove('hidden');
         }
 
-        // Hide error message
         function hideError() {
-            const errorEl = document.getElementById('error-message');
-            errorEl.classList.remove('show');
+            document.getElementById('error-message').classList.add('hidden');
         }
 
-        // Check password strength
         function checkPasswordStrength() {
             const password = document.getElementById('password').value;
             const hint = document.getElementById('password-hint');
@@ -154,44 +125,27 @@
             if (password.match(/[0-9]/)) strength++;
             if (password.match(/[^a-zA-Z0-9]/)) strength++;
             
-            const colors = ['var(--error)', 'var(--error)', 'var(--warning)', '#00d26a', '#00d26a'];
+            const colors = ['text-danger', 'text-danger', 'text-warning', 'text-success', 'text-success'];
             const texts = ['Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'];
             
-            hint.style.color = colors[strength - 1] || 'var(--text-secondary)';
+            hint.className = `text-xs ${colors[strength - 1] || 'text-text-muted'}`;
             hint.textContent = strength > 0 ? `Strength: ${texts[strength - 1]}` : 'Must be at least 8 characters';
         }
 
-        // Handle signup form submission
         async function handleSignup(event) {
             event.preventDefault();
             hideError();
             
             const btn = document.getElementById('signup-btn');
-            const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             
-            // Validation
-            if (!name || !email || !password || !confirmPassword) {
+            if (!email || !password || !confirmPassword) {
                 showError('Please fill in all fields');
                 return;
             }
             
-            // Name validation
-            if (name.length < 2) {
-                showError('Please enter your full name');
-                return;
-            }
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                showError('Please enter a valid email address');
-                return;
-            }
-            
-            // Password validation
             if (password.length < 8) {
                 showError('Password must be at least 8 characters');
                 return;
@@ -206,14 +160,12 @@
             btn.textContent = 'Creating account...';
             
             try {
-                // API call to signup endpoint
                 const response = await fetch(`${API_BASE_URL}/auth/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
-                // Check if response is JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
@@ -227,16 +179,11 @@
                     throw new Error(data.detail || 'Registration failed');
                 }
                 
-                // Store auth data
                 localStorage.setItem('token', data.access_token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 
                 showToast('Account created successfully!');
-                
-                // Redirect to dashboard
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 500);
+                setTimeout(() => window.location.href = 'dashboard.html', 500);
                 
             } catch (error) {
                 console.error('Signup error:', error);
@@ -246,7 +193,6 @@
             }
         }
 
-        // Check if already logged in
         if (localStorage.getItem('token')) {
             window.location.href = 'dashboard.html';
         }

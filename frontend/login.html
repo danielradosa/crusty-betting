@@ -7,29 +7,29 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/utilities.css">
 </head>
-<body>
+<body class="bg-bg min-h-screen">
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar py-4">
         <div class="container flex justify-between items-center">
-            <a href="index.html" class="logo">🔮 Sports Numerology</a>
-            <div class="nav-links flex items-center gap-4">
-                <a href="index.html">Home</a>
-                <a href="signup.html" class="btn btn-primary">Sign Up</a>
+            <a href="index.html" class="logo text-xl font-bold">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-6">
+                <a href="index.html" class="text-text-muted hover:text-text transition">Home</a>
+                <a href="signup.html" class="btn btn-primary px-4 py-2">Sign Up</a>
             </div>
         </div>
     </nav>
 
     <!-- Auth Container -->
-    <div class="auth-container flex items-center justify-center min-h-screen">
-        <div class="glass-card auth-card w-full">
-            <h2>Welcome Back</h2>
-            <p class="auth-subtitle">Sign in to access your API keys and usage stats</p>
+    <div class="flex items-center justify-center min-h-screen px-4 py-12">
+        <div class="glass-card w-full max-w-md p-8 rounded-lg">
+            <h2 class="text-2xl font-bold text-center mb-2">Welcome Back</h2>
+            <p class="text-text-muted text-center mb-6">Sign in to access your API keys and usage stats</p>
             
-            <div class="error-message" id="error-message"></div>
+            <div class="error-message hidden bg-danger/20 text-danger p-3 rounded mb-4 text-sm" id="error-message"></div>
             
-            <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
+            <form class="flex flex-col gap-4" id="login-form" onsubmit="handleLogin(event)">
+                <div class="flex flex-col gap-2">
+                    <label for="email" class="text-sm font-medium">Email Address</label>
                     <input 
                         type="email" 
                         id="email" 
@@ -37,11 +37,12 @@
                         placeholder="you@example.com"
                         required
                         autocomplete="email"
+                        class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none transition"
                     >
                 </div>
                 
-                <div class="form-group">
-                    <label for="password">Password</label>
+                <div class="flex flex-col gap-2">
+                    <label for="password" class="text-sm font-medium">Password</label>
                     <input 
                         type="password" 
                         id="password" 
@@ -49,76 +50,64 @@
                         placeholder="••••••••"
                         required
                         autocomplete="current-password"
+                        class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none transition"
                     >
                 </div>
                 
-                <button type="submit" class="btn btn-primary" id="login-btn">
+                <button type="submit" class="btn btn-primary w-full py-3 mt-2 font-semibold" id="login-btn">
                     Sign In
                 </button>
             </form>
             
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="signup.html">Sign up</a></p>
-                <p style="margin-top: 15px;"><a href="#" onclick="showForgotPassword()">Forgot password?</a></p>
+            <div class="mt-6 text-center flex flex-col gap-3">
+                <p class="text-text-muted">Don't have an account? <a href="signup.html" class="text-primary-light hover:underline">Sign up</a></p>
+                <p><a href="#" onclick="showForgotPassword(); return false;" class="text-text-muted hover:text-text text-sm">Forgot password?</a></p>
             </div>
         </div>
     </div>
 
     <!-- Forgot Password Modal -->
-    <div class="modal-overlay" id="forgot-modal">
-        <div class="modal">
-            <h3>Reset Password</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+    <div class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="forgot-modal">
+        <div class="glass-card max-w-md w-full mx-4 p-6 rounded-lg">
+            <h3 class="text-xl font-bold mb-2">Reset Password</h3>
+            <p class="text-text-muted mb-4 text-sm">
                 Enter your email address and we'll send you a link to reset your password.
             </p>
-            <div class="form-group">
-                <input type="email" id="reset-email" placeholder="you@example.com">
+            <div class="flex flex-col gap-2 mb-4">
+                <input type="email" id="reset-email" placeholder="you@example.com" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeForgotModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="sendResetLink()">Send Link</button>
+            <div class="flex gap-3 justify-end">
+                <button class="btn btn-secondary px-4 py-2" onclick="closeForgotModal()">Cancel</button>
+                <button class="btn btn-primary px-4 py-2" onclick="sendResetLink()">Send Link</button>
             </div>
         </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
 
     <script>
-        // API Configuration
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:8000' 
-            : '';
+        const API_BASE_URL = '';
 
-        // Show toast notification
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
+            toast.className = `p-4 rounded-lg mb-2 text-white ${type === 'success' ? 'bg-secondary' : 'bg-danger'} shadow-lg transition`;
             toast.textContent = message;
             container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => toast.remove(), 3000);
         }
 
-        // Show error message
         function showError(message) {
-            const errorEl = document.getElementById('error-message');
-            errorEl.textContent = message;
-            errorEl.classList.add('show');
+            const el = document.getElementById('error-message');
+            el.textContent = message;
+            el.classList.remove('hidden');
         }
 
-        // Hide error message
         function hideError() {
-            const errorEl = document.getElementById('error-message');
-            errorEl.classList.remove('show');
+            document.getElementById('error-message').classList.add('hidden');
         }
 
-        // Handle login form submission
         async function handleLogin(event) {
             event.preventDefault();
             hideError();
@@ -127,16 +116,8 @@
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             
-            // Basic validation
             if (!email || !password) {
                 showError('Please fill in all fields');
-                return;
-            }
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                showError('Please enter a valid email address');
                 return;
             }
             
@@ -144,7 +125,6 @@
             btn.textContent = 'Signing in...';
             
             try {
-                // API call to login endpoint
                 const response = await fetch(`${API_BASE_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -157,16 +137,11 @@
                     throw new Error(data.detail || 'Login failed');
                 }
                 
-                // Store auth data
                 localStorage.setItem('token', data.access_token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 
                 showToast('Welcome back!');
-                
-                // Redirect to dashboard
-                setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 500);
+                setTimeout(() => window.location.href = 'dashboard.html', 500);
                 
             } catch (error) {
                 showError(error.message || 'Invalid email or password');
@@ -175,40 +150,28 @@
             }
         }
 
-        // Show forgot password modal
         function showForgotPassword() {
-            document.getElementById('forgot-modal').classList.add('show');
+            document.getElementById('forgot-modal').classList.remove('hidden');
         }
 
-        // Close forgot password modal
         function closeForgotModal() {
-            document.getElementById('forgot-modal').classList.remove('show');
+            document.getElementById('forgot-modal').classList.add('hidden');
         }
 
-        // Send reset link
         async function sendResetLink() {
             const email = document.getElementById('reset-email').value.trim();
-            
             if (!email) {
                 showToast('Please enter your email', 'error');
                 return;
             }
-            
-            // API call would go here
-            // await fetch('/api/v1/auth/forgot-password', {...})
-            
             showToast('Reset link sent to your email');
             closeForgotModal();
         }
 
-        // Close modal on overlay click
         document.getElementById('forgot-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeForgotModal();
-            }
+            if (e.target === this) closeForgotModal();
         });
 
-        // Check if already logged in
         if (localStorage.getItem('token')) {
             window.location.href = 'dashboard.html';
         }
