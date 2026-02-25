@@ -259,7 +259,8 @@
             apiKeys.forEach(key => {
                 const option = document.createElement('option');
                 option.value = key.api_key;
-                option.textContent = `${key.name || 'Unnamed Key'} (${key.api_key.substring(0, 12)}...)`;
+                const masked = key.api_key.substring(0, 8) + '...' + key.api_key.substring(key.api_key.length - 4);
+                option.textContent = `${key.name || 'Unnamed Key'} (${masked})`;
                 select.appendChild(option);
             });
         }
@@ -272,7 +273,14 @@
                 return;
             }
 
-            container.innerHTML = apiKeys.map(key => `
+            container.innerHTML = apiKeys.map(key => {
+                // Mask key for display (show first 8 and last 4 chars)
+                const fullKey = key.api_key;
+                const maskedKey = fullKey.length > 12 
+                    ? fullKey.substring(0, 8) + '...' + fullKey.substring(fullKey.length - 4)
+                    : fullKey;
+                
+                return `
         <div class="keyrow">
           <div class="keyrow-top">
             <div>
@@ -281,9 +289,9 @@
             </div>
             <button class="cta-secondary" onclick="revokeKey('${key.id}')">Revoke</button>
           </div>
-          <code class="kcode">${escapeHtml(key.api_key)}</code>
+          <code class="kcode">${escapeHtml(maskedKey)}</code>
         </div>
-      `).join('');
+      `}).join('');
         }
 
         async function updateUsageStats() {

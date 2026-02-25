@@ -317,7 +317,7 @@ def list_api_keys(
         {
             "id": key.id,
             "name": key.name,
-            "api_key": key.api_key[:8] + "..." + key.api_key[-4:] if len(key.api_key) > 12 else key.api_key,
+            "api_key": key.api_key,  # Return full key for owner's use
             "created_at": key.created_at.isoformat(),
             "last_used": key.last_used.isoformat() if key.last_used else None,
             "active": key.active,
