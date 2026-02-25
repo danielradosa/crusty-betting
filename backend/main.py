@@ -71,11 +71,11 @@ class APIKeyResponse(BaseModel):
 
 class MatchAnalysisRequest(BaseModel):
     player1_name: str = Field(..., min_length=1, max_length=100)
-    player1_birthdate: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
+    player1_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
     player2_name: str = Field(..., min_length=1, max_length=100)
-    player2_birthdate: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
-    match_date: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
-    sport: str = Field(default="tennis", regex=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
+    player2_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    match_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
 
 class MatchAnalysisResponse(BaseModel):
     match_date: str
@@ -94,11 +94,11 @@ class MatchAnalysisResponse(BaseModel):
 
 class DemoRequest(BaseModel):
     player1_name: str = Field(..., min_length=1, max_length=100)
-    player1_birthdate: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
+    player1_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
     player2_name: str = Field(..., min_length=1, max_length=100)
-    player2_birthdate: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
-    match_date: str = Field(..., regex=r'^\d{4}-\d{2}-\d{2}$')
-    sport: str = Field(default="tennis", regex=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
+    player2_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    match_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
 
 # Startup event
 @app.on_event("startup")
