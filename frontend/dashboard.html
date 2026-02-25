@@ -90,6 +90,14 @@
 
             <form id="analysis-form" onsubmit="runAnalysis(); return false;">
                 <div class="form-row">
+                    <label>API Key</label>
+                    <select id="api-key-select" required>
+                        <option value="">Select API key...</option>
+                    </select>
+                    <small class="muted">Free plan: 10 analyses/day | Pro: Unlimited</small>
+                </div>
+
+                <div class="form-row">
                     <label>Sport</label>
                     <select id="sport" onchange="clearPlayers()">
                         <option value="tennis">Tennis</option>
@@ -99,23 +107,33 @@
 
                 <div class="grid-2">
                     <div class="form-row">
-                        <label>Player 1</label>
-                        <input type="text" id="player1-search" placeholder="Search player..." 
+                        <label>Player 1 Name</label>
+                        <input type="text" id="player1-search" placeholder="Type to search or enter manually..." 
                                oninput="searchPlayers(1, this.value)" autocomplete="off"/>
                         <input type="hidden" id="player1-name" />
-                        <input type="hidden" id="player1-birthdate" />
                         <div id="player1-results" class="search-results"></div>
-                        <small id="player1-info" class="muted"></small>
                     </div>
 
                     <div class="form-row">
-                        <label>Player 2</label>
-                        <input type="text" id="player2-search" placeholder="Search player..." 
+                        <label>Player 1 Birthdate</label>
+                        <input type="date" id="player1-birthdate" required />
+                        <small class="muted">Auto-filled if player found, or enter manually</small>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-row">
+                        <label>Player 2 Name</label>
+                        <input type="text" id="player2-search" placeholder="Type to search or enter manually..." 
                                oninput="searchPlayers(2, this.value)" autocomplete="off"/>
                         <input type="hidden" id="player2-name" />
-                        <input type="hidden" id="player2-birthdate" />
                         <div id="player2-results" class="search-results"></div>
-                        <small id="player2-info" class="muted"></small>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Player 2 Birthdate</label>
+                        <input type="date" id="player2-birthdate" required />
+                        <small class="muted">Auto-filled if player found, or enter manually</small>
                     </div>
                 </div>
 
@@ -125,7 +143,7 @@
                 </div>
 
                 <button type="submit" class="cta-primary" id="analyze-btn" style="width: 100%;">
-                    Analyze Match
+                    🔮 Analyze Match
                 </button>
             </form>
 
@@ -225,11 +243,25 @@
                 if (!response.ok) throw new Error('Failed to load keys');
 
                 const apiKeys = await response.json();
+                window.apiKeysList = apiKeys; // Store for later use
                 renderApiKeys(apiKeys);
+                populateApiKeySelect(apiKeys);
                 updateUsageStats();
             } catch (error) {
                 console.error('Error:', error);
             }
+        }
+
+        function populateApiKeySelect(apiKeys) {
+            const select = document.getElementById('api-key-select');
+            select.innerHTML = '<option value="">Select API key...</option>';
+            
+            apiKeys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key.api_key;
+                option.textContent = `${key.name || 'Unnamed Key'} (${key.api_key.substring(0, 12)}...)`;
+                select.appendChild(option);
+            });
         }
 
         function renderApiKeys(apiKeys) {
@@ -380,7 +412,6 @@
             document.getElementById(`player${playerNum}-name`).value = name;
             document.getElementById(`player${playerNum}-birthdate`).value = birthdate;
             document.getElementById(`player${playerNum}-results`).innerHTML = '';
-            document.getElementById(`player${playerNum}-info`).textContent = `Selected: ${name} (${birthdate})`;
         }
         
         function clearPlayers() {
@@ -389,7 +420,6 @@
                 document.getElementById(`player${num}-name`).value = '';
                 document.getElementById(`player${num}-birthdate`).value = '';
                 document.getElementById(`player${num}-results`).innerHTML = '';
-                document.getElementById(`player${num}-info`).textContent = '';
             });
         }
         
@@ -398,15 +428,21 @@
             const loading = document.getElementById('analysis-loading');
             const result = document.getElementById('analysis-result');
             
-            const player1Name = document.getElementById('player1-name').value;
+            const apiKey = document.getElementById('api-key-select').value;
+            const player1Search = document.getElementById('player1-search').value;
             const player1Birth = document.getElementById('player1-birthdate').value;
-            const player2Name = document.getElementById('player2-name').value;
+            const player2Search = document.getElementById('player2-search').value;
             const player2Birth = document.getElementById('player2-birthdate').value;
             const matchDate = document.getElementById('match-date').value;
             const sport = document.getElementById('sport').value;
             
-            if (!player1Name || !player1Birth || !player2Name || !player2Birth || !matchDate) {
-                alert('Please select both players and match date');
+            if (!apiKey) {
+                alert('Please select an API key');
+                return;
+            }
+            
+            if (!player1Search || !player1Birth || !player2Search || !player2Birth || !matchDate) {
+                alert('Please enter both players names and birthdates, plus match date');
                 return;
             }
             
@@ -419,12 +455,12 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': apiKeys[0]?.api_key || ''
+                        'X-API-Key': apiKey
                     },
                     body: JSON.stringify({
-                        player1_name: player1Name,
+                        player1_name: player1Search,
                         player1_birthdate: player1Birth,
-                        player2_name: player2Name,
+                        player2_name: player2Search,
                         player2_birthdate: player2Birth,
                         match_date: matchDate,
                         sport: sport
@@ -436,7 +472,10 @@
                     return;
                 }
                 
-                if (!response.ok) throw new Error('Analysis failed');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Analysis failed');
+                }
                 
                 const data = await response.json();
                 
