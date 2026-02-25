@@ -7,228 +7,197 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/utilities.css">
 </head>
-<body>
+<body class="bg-bg min-h-screen">
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar py-4 border-b border-border">
         <div class="container flex justify-between items-center">
-            <a href="index.html" class="logo">🔮 Sports Numerology</a>
-            <div class="nav-links flex items-center gap-4">
-                <a href="#demo">Demo</a>
-                <a href="#features">Features</a>
-                <a href="#pricing">Pricing</a>
-                <a href="login.html" class="btn btn-secondary">Sign In</a>
-                <a href="signup.html" class="btn btn-primary">Get Started</a>
+            <a href="index.html" class="logo text-xl font-bold">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-6">
+                <a href="#demo" class="text-text-muted hover:text-text transition">Demo</a>
+                <a href="#features" class="text-text-muted hover:text-text transition">Features</a>
+                <a href="#pricing" class="text-text-muted hover:text-text transition">Pricing</a>
+                <a href="login.html" class="btn btn-secondary px-4 py-2">Sign In</a>
+                <a href="signup.html" class="btn btn-primary px-4 py-2">Get Started</a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <h1>Predict Sports Matches with Numerology</h1>
-        <p class="subtitle">Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.</p>
-        <div class="hero-cta">
-            <a href="#demo" class="btn btn-primary">Try It Free</a>
-            <a href="#features" class="btn btn-secondary">Learn More</a>
+    <section class="py-20 px-4">
+        <div class="container text-center max-w-3xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                Predict Sports Matches with <span class="text-primary-light">Numerology</span>
+            </h1>
+            <p class="text-text-muted text-lg mb-8 max-w-2xl mx-auto">
+                Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.
+            </p>
+            <div class="flex gap-4 justify-center mb-12">
+                <a href="#demo" class="btn btn-primary px-6 py-3 text-lg">Try It Free</a>
+                <a href="#features" class="btn btn-secondary px-6 py-3 text-lg">Learn More</a>
+            </div>
+            <div class="flex justify-center gap-12 text-center">
+                <div>
+                    <div class="text-3xl font-bold text-primary-light">10K+</div>
+                    <div class="text-text-muted text-sm">Analyses</div>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-primary-light">500+</div>
+                    <div class="text-text-muted text-sm">API Users</div>
+                </div>
+                <div>
+                    <div class="text-3xl font-bold text-primary-light">5</div>
+                    <div class="text-text-muted text-sm">Sports</div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Demo Section -->
-    <section class="demo-section" id="demo">
-        <h2 class="section-title">Try the Demo</h2>
-        <div class="demo-container">
-            <div class="glass-card demo-form">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="player1">Player 1 Name</label>
-                        <input type="text" id="player1" placeholder="e.g., Novak Djokovic">
+    <section class="py-16 px-4 bg-bg-light" id="demo">
+        <div class="container max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-2">Try the Demo</h2>
+            <p class="text-text-muted text-center mb-8">5 free analyses per day. No signup required.</p>
+            
+            <div class="glass-card p-6 md:p-8 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Player 1 Name</label>
+                        <input type="text" id="player1" placeholder="e.g., Novak Djokovic" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                     </div>
-                    <div class="form-group">
-                        <label for="birth1">Player 1 Birth Date</label>
-                        <input type="date" id="birth1">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Player 1 Birth Date</label>
+                        <input type="date" id="birth1" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                     </div>
-                    <div class="form-group">
-                        <label for="player2">Player 2 Name</label>
-                        <input type="text" id="player2" placeholder="e.g., Rafael Nadal">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Player 2 Name</label>
+                        <input type="text" id="player2" placeholder="e.g., Rafael Nadal" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                     </div>
-                    <div class="form-group">
-                        <label for="birth2">Player 2 Birth Date</label>
-                        <input type="date" id="birth2">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Player 2 Birth Date</label>
+                        <input type="date" id="birth2" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                     </div>
-                    <div class="form-group">
-                        <label for="sport">Sport</label>
-                        <select id="sport">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Sport</label>
+                        <select id="sport" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                             <option value="tennis">Tennis</option>
-                            <option value="table_tennis">Table Tennis</option>
+                            <option value="table-tennis">Table Tennis</option>
                             <option value="boxing">Boxing</option>
                             <option value="mma">MMA</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="match-date">Match Date</label>
-                        <input type="date" id="match-date">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-medium">Match Date</label>
+                        <input type="date" id="match-date" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="analyzeMatch()" id="analyze-btn">
+                
+                <button onclick="analyzeMatch()" id="analyze-btn" class="btn btn-primary w-full py-3 font-semibold mb-4">
                     🔮 Analyze Match
                 </button>
-                <div class="spinner" id="loading-spinner" style="display: none;"></div>
                 
-                <!-- Results Area -->
-                <div class="results-area" id="results">
-                    <div class="result-winner">🏆 Winner: <span id="winner-name"></span></div>
-                    <p id="result-description"></p>
-                    <div class="result-stats">
-                        <div class="stat-card">
-                            <div class="stat-label">Player 1 Score</div>
-                            <div class="stat-value" id="p1-score">-</div>
+                <div id="loading" class="hidden text-center py-4">
+                    <div class="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-text-muted mt-2">Analyzing...</p>
+                </div>
+                
+                <div id="results" class="hidden border-t border-border pt-6 mt-6">
+                    <div class="bg-primary/10 p-4 rounded-lg mb-4">
+                        <h3 class="text-xl font-bold text-primary-light">🏆 Winner: <span id="winner-name"></span></h3>
+                    </div>
+                    <p id="result-description" class="text-text-muted mb-4"></p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
+                            <div class="text-text-muted text-sm mb-1">Player 1</div>
+                            <div class="text-2xl font-bold" id="p1-score">-</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Player 2 Score</div>
-                            <div class="stat-value" id="p2-score">-</div>
+                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
+                            <div class="text-text-muted text-sm mb-1">Player 2</div>
+                            <div class="text-2xl font-bold" id="p2-score">-</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Confidence</div>
-                            <div class="stat-value" id="confidence">-</div>
+                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
+                            <div class="text-text-muted text-sm mb-1">Confidence</div>
+                            <div class="text-2xl font-bold text-primary-light" id="confidence">-</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Lucky Number</div>
-                            <div class="stat-value" id="lucky-number">-</div>
+                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
+                            <div class="text-text-muted text-sm mb-1">Lucky #</div>
+                            <div class="text-2xl font-bold" id="lucky-number">-</div>
                         </div>
                     </div>
+                    <p id="demo-note" class="text-text-muted text-sm mt-4 text-center"></p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="features-section" id="features">
-        <h2 class="section-title">Powerful Features</h2>
-        <div class="features-grid">
-            <div class="glass-card feature-card">
-                <div class="feature-icon">🎾</div>
-                <h3>Multiple Sports</h3>
-                <p>Support for Tennis, Table Tennis, Boxing, and MMA. More sports coming soon based on user demand.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon">🔢</div>
-                <h3>Numerology Calculations</h3>
-                <p>Advanced algorithms analyze birthdates, life path numbers, and match timing for accurate predictions.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Betting Confidence Scores</h3>
-                <p>Get percentage-based confidence ratings to help inform your betting decisions responsibly.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Fast API Response</h3>
-                <p>Sub-second response times with 99.9% uptime. Built for high-frequency trading and betting platforms.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon">🔐</div>
-                <h3>Secure & Private</h3>
-                <p>Enterprise-grade security with API key authentication. Your data is never shared or sold.</p>
-            </div>
-            <div class="glass-card feature-card">
-                <div class="feature-icon">📚</div>
-                <h3>Comprehensive Docs</h3>
-                <p>Detailed API documentation with code examples in Python, JavaScript, and more.</p>
+    <section class="py-16 px-4" id="features">
+        <div class="container max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-lg text-center">
+                    <div class="text-4xl mb-4">1️⃣</div>
+                    <h3 class="text-xl font-bold mb-2">Life Path Analysis</h3>
+                    <p class="text-text-muted">We calculate each athlete's Life Path number from their birth date to determine their core energy.</p>
+                </div>
+                <div class="glass-card p-6 rounded-lg text-center">
+                    <div class="text-4xl mb-4">2️⃣</div>
+                    <h3 class="text-xl font-bold mb-2">Universal Cycles</h3>
+                    <p class="text-text-muted">We analyze the Universal Year, Month, and Day of the match to find harmonious alignments.</p>
+                </div>
+                <div class="glass-card p-6 rounded-lg text-center">
+                    <div class="text-4xl mb-4">3️⃣</div>
+                    <h3 class="text-xl font-bold mb-2">Winning Prediction</h3>
+                    <p class="text-text-muted">The athlete with stronger numerological alignment to the match date has the advantage.</p>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Pricing Section -->
-    <section class="pricing-section" id="pricing">
-        <h2 class="section-title">Simple Pricing</h2>
-        <div class="pricing-grid">
-            <div class="glass-card pricing-card">
-                <h3>Free</h3>
-                <div class="price">$0<span>/month</span></div>
-                <ul class="pricing-features">
-                    <li>10 predictions per day</li>
-                    <li>Tennis & Table Tennis</li>
-                    <li>Basic numerology analysis</li>
-                    <li>Email support</li>
-                </ul>
-                <a href="signup.html" class="btn btn-secondary">Get Started</a>
-            </div>
-            <div class="glass-card pricing-card featured">
-                <h3>Pro</h3>
-                <div class="price">$49<span>/month</span></div>
-                <ul class="pricing-features">
-                    <li>Unlimited predictions</li>
-                    <li>All sports including Boxing & MMA</li>
-                    <li>Advanced numerology analysis</li>
-                    <li>API key authentication</li>
-                    <li>Priority support</li>
-                    <li>Historical data access</li>
-                </ul>
-                <a href="signup.html" class="btn btn-primary">Upgrade to Pro</a>
+    <section class="py-16 px-4 bg-bg-light" id="pricing">
+        <div class="container max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Pricing</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-8 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2">Free</h3>
+                    <div class="text-3xl font-bold mb-4">$0</div>
+                    <ul class="space-y-2 text-text-muted mb-6">
+                        <li>✓ 5 analyses per day</li>
+                        <li>✓ Basic numerology report</li>
+                        <li>✓ Web interface access</li>
+                    </ul>
+                    <a href="#demo" class="btn btn-secondary w-full py-3 block text-center">Try Free</a>
+                </div>
+                <div class="glass-card p-8 rounded-lg border-2 border-primary">
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <div class="text-3xl font-bold mb-4">$19/mo</div>
+                    <ul class="space-y-2 text-text-muted mb-6">
+                        <li>✓ Unlimited analyses</li>
+                        <li>✓ API access</li>
+                        <li>✓ Detailed reports</li>
+                        <li>✓ Priority support</li>
+                    </ul>
+                    <a href="signup.html" class="btn btn-primary w-full py-3 block text-center">Get Started</a>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="demo-section text-center">
-        <h2 class="section-title">Ready to Predict?</h2>
-        <p class="text-secondary mb-8 mx-auto" style="max-width: 500px;">
-            Join thousands of sports analysts and betting professionals using our numerology API.
-        </p>
-        <a href="signup.html" class="btn btn-primary text-lg px-10 py-4">
-            Create Free Account
-        </a>
-    </section>
-
     <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
+    <footer class="py-8 px-4 border-t border-border">
+        <div class="container text-center text-text-muted">
+            <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
+        </div>
     </footer>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
     <script>
-        // API Configuration
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:8000' 
-            : '';
+        const API_BASE_URL = '';
 
-        // Set default match date to today
-        document.getElementById('match-date').valueAsDate = new Date();
-
-        // Check if user is logged in
-        function isLoggedIn() {
-            return localStorage.getItem('token') !== null;
-        }
-
-        // Get auth headers if logged in
-        function getAuthHeaders() {
-            const token = localStorage.getItem('token');
-            return token ? { 'Authorization': 'Bearer ' + token } : {};
-        }
-
-        // Show toast notification
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Analyze match function
         async function analyzeMatch() {
             const btn = document.getElementById('analyze-btn');
-            const spinner = document.getElementById('loading-spinner');
+            const loading = document.getElementById('loading');
             const results = document.getElementById('results');
             
-            // Get form values
             const player1 = document.getElementById('player1').value.trim();
             const birth1 = document.getElementById('birth1').value;
             const player2 = document.getElementById('player2').value.trim();
@@ -236,111 +205,63 @@
             const sport = document.getElementById('sport').value;
             const matchDate = document.getElementById('match-date').value;
             
-            // Validation
             if (!player1 || !birth1 || !player2 || !birth2 || !matchDate) {
-                showToast('Please fill in all fields', 'error');
+                alert('Please fill in all fields');
                 return;
             }
             
-            // Show loading
             btn.disabled = true;
-            btn.textContent = 'Analyzing...';
-            spinner.style.display = 'block';
-            results.classList.remove('show');
+            btn.classList.add('hidden');
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
             
             try {
-                const data = {
-                    player1_name: player1,
-                    player1_birthdate: birth1,
-                    player2_name: player2,
-                    player2_birthdate: birth2,
-                    match_date: matchDate,
-                    sport: sport
-                };
-                
-                // Determine endpoint based on auth status
-                const endpoint = isLoggedIn() 
-                    ? `${API_BASE_URL}/api/v1/analyze-match` 
-                    : `${API_BASE_URL}/api/v1/demo-analyze`;
-                
-                const headers = {
-                    'Content-Type': 'application/json',
-                    ...getAuthHeaders()
-                };
-                
-                // Make actual API call
-                const response = await fetch(endpoint, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/demo-analyze`, {
                     method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(data)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player1_name: player1,
+                        player1_birthdate: birth1,
+                        player2_name: player2,
+                        player2_birthdate: birth2,
+                        match_date: matchDate,
+                        sport: sport
+                    })
                 });
                 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Analysis failed');
+                if (response.status === 429) {
+                    alert('Demo limit reached (5 per day). Please sign up for unlimited access.');
+                    return;
                 }
                 
-                const apiResult = await response.json();
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
                 
-                // Format result for display
-                const result = {
-                    winner: apiResult.winner_prediction,
-                    player1_score: apiResult.player1?.score || 0,
-                    player2_score: apiResult.player2?.score || 0,
-                    confidence: apiResult.confidence === 'STRONG' ? 90 : apiResult.confidence === 'MODERATE' ? 75 : 60,
-                    lucky_number: apiResult.universal_day || 1,
-                    description: apiResult.analysis_summary || 'Analysis complete.',
-                    remaining_tries: apiResult.remaining_tries,
-                    is_demo: apiResult.demo
-                };
+                const data = await response.json();
                 
-                // Display results
-                document.getElementById('winner-name').textContent = result.winner;
-                document.getElementById('result-description').textContent = result.description;
-                document.getElementById('p1-score').textContent = result.player1_score + '%';
-                document.getElementById('p2-score').textContent = result.player2_score + '%';
-                document.getElementById('confidence').textContent = result.confidence + '%';
-                document.getElementById('lucky-number').textContent = result.lucky_number;
+                document.getElementById('winner-name').textContent = data.winner_prediction;
+                document.getElementById('result-description').textContent = data.analysis_summary;
+                document.getElementById('p1-score').textContent = data.player1?.score || '-';
+                document.getElementById('p2-score').textContent = data.player2?.score || '-';
+                document.getElementById('confidence').textContent = data.confidence;
+                document.getElementById('lucky-number').textContent = data.universal_day || '-';
                 
-                results.classList.add('show');
+                const note = document.getElementById('demo-note');
+                if (data.remaining_tries !== undefined) {
+                    note.textContent = `${data.remaining_tries} free tries remaining today`;
+                }
                 
-                // Create confetti effect
-                createConfetti();
+                results.classList.remove('hidden');
                 
             } catch (error) {
-                showToast('Analysis failed. Please try again.', 'error');
-                console.error('Analysis error:', error);
+                alert('Error: ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🔮 Analyze Match';
-                spinner.style.display = 'none';
+                btn.classList.remove('hidden');
+                loading.classList.add('hidden');
             }
         }
-
-        // Confetti effect
-        function createConfetti() {
-            const colors = ['#ffd700', '#6c5ce7', '#00d26a', '#ff4757'];
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.animationDelay = Math.random() * 2 + 's';
-                document.body.appendChild(confetti);
-                setTimeout(() => confetti.remove(), 3000);
-            }
-        }
-
-        // Smooth scroll for navigation
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
     </script>
 </body>
 </html>

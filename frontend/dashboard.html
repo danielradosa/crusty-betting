@@ -7,444 +7,271 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/utilities.css">
 </head>
-<body>
+<body class="bg-bg min-h-screen">
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar py-4 border-b border-border">
         <div class="container flex justify-between items-center">
-            <a href="index.html" class="logo">🔮 Sports Numerology</a>
-            <div class="nav-links flex items-center gap-4">
-                <a href="index.html">Home</a>
-                <a href="#" onclick="logout()">Logout</a>
+            <a href="index.html" class="logo text-xl font-bold">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-6">
+                <a href="index.html" class="text-text-muted hover:text-text transition">Home</a>
+                <span id="user-email" class="text-text-muted text-sm"></span>
+                <button onclick="logout()" class="btn btn-secondary px-4 py-2">Logout</button>
             </div>
         </div>
     </nav>
 
-    <!-- Dashboard Container -->
-    <div class="dashboard-container container">
+    <!-- Dashboard Content -->
+    <div class="container py-8 max-w-6xl mx-auto px-4">
         <!-- Header -->
-        <div class="dashboard-header mb-6">
-            <h1 class="text-2xl font-bold mb-2">Welcome back, <span id="user-name">User</span>!</h1>
-            <p class="text-secondary">Manage your API keys and monitor your usage</p>
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Dashboard</h1>
+            <p class="text-text-muted">Manage your API keys and monitor usage</p>
         </div>
 
-        <!-- Dashboard Grid -->
-        <div class="dashboard-grid grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Usage Stats Card -->
-            <div class="glass-card dashboard-card">
-                <h3>📊 Usage Statistics</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="number" id="today-requests">0</div>
-                        <div class="label">Today</div>
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Usage Stats -->
+            <div class="glass-card p-6 rounded-lg">
+                <h3 class="text-lg font-semibold mb-4">📊 Usage Statistics</h3>
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-primary-light" id="today-requests">0</div>
+                        <div class="text-text-muted text-sm">Today</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="number" id="month-requests">0</div>
-                        <div class="label">This Month</div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-primary-light" id="month-requests">0</div>
+                        <div class="text-text-muted text-sm">This Month</div>
                     </div>
-                    <div class="stat-box">
-                        <div class="number" id="total-requests">0</div>
-                        <div class="label">Total</div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-primary-light" id="total-requests">0</div>
+                        <div class="text-text-muted text-sm">Total</div>
                     </div>
                 </div>
-                <div class="mt-6 pt-5 border-t">
-                    <p class="text-sm text-secondary flex justify-between">
-                        <span>Plan: <span id="user-tier" class="font-semibold" style="color: var(--gold);">Free</span></span>
-                        <span id="usage-limit">10 / 10 daily</span>
-                    </p>
-                    <div class="mt-2 h-1.5 bg-bg-lighter rounded overflow-hidden">
-                        <div id="usage-bar" class="h-full transition-all duration-500" style="width: 0%; background: linear-gradient(90deg, var(--gold), var(--purple-light));"></div>
+                <div class="border-t border-border pt-4">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-text-muted">Plan: <span class="text-primary-light font-semibold">Free</span></span>
+                        <span class="text-text-muted">10 / day</span>
+                    </div>
+                    <div class="w-full h-2 bg-bg-lighter rounded-full overflow-hidden">
+                        <div id="usage-bar" class="h-full bg-gradient-to-r from-primary to-primary-light transition-all" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- API Keys Card -->
-            <div class="glass-card dashboard-card">
-                <h3>🔐 API Keys</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
-                    Use these keys to authenticate your API requests. Keep them secret!
-                </p>
-                <button class="btn btn-primary btn-small" onclick="showCreateKeyModal()">
-                    + Generate New Key
-                </button>
-                
-                <div class="api-keys-list" id="api-keys-list">
-                    <!-- API keys will be loaded here -->
+            <!-- API Keys -->
+            <div class="glass-card p-6 rounded-lg md:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">🔐 API Keys</h3>
+                    <button onclick="showCreateKeyModal()" class="btn btn-primary px-4 py-2 text-sm">+ Generate New Key</button>
+                </div>
+                <p class="text-text-muted text-sm mb-4">Use these keys to authenticate your API requests. Keep them secret!</p>
+                <div id="api-keys-list" class="space-y-3">
+                    <!-- API keys loaded here -->
                 </div>
             </div>
+        </div>
 
-            <!-- Quick Links Card -->
-            <div class="glass-card dashboard-card">
-                <h3>📚 Resources</h3>
-                <div class="flex flex-col gap-4 mt-4">
-                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
-                        <span class="text-2xl mr-4">📖</span>
-                        <div>
-                            <div class="font-semibold">API Documentation</div>
-                            <div class="text-sm text-secondary">View endpoints & examples</div>
-                        </div>
-                    </a>
-                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
-                        <span class="text-2xl mr-4">💻</span>
-                        <div>
-                            <div class="font-semibold">Code Examples</div>
-                            <div class="text-sm text-secondary">Python, JavaScript, & more</div>
-                        </div>
-                    </a>
-                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
-                        <span class="text-2xl mr-4">🎾</span>
-                        <div>
-                            <div class="font-semibold">Try Demo</div>
-                            <div class="text-sm text-secondary">Test the API without code</div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Account Info Card -->
-            <div class="glass-card dashboard-card">
-                <h3>👤 Account</h3>
-                <div class="mb-4">
-                    <div class="text-sm text-secondary mb-1">Email</div>
-                    <div id="account-email" class="font-medium">-</div>
-                </div>
-                <div class="mb-4">
-                    <div class="text-sm text-secondary mb-1">Member Since</div>
-                    <div id="member-since">-</div>
-                </div>
-                <div>
-                    <button class="btn btn-secondary btn-small" onclick="showUpgradeModal()" id="upgrade-btn">
-                        Upgrade to Pro
-                    </button>
-                </div>
+        <!-- Resources -->
+        <div class="glass-card p-6 rounded-lg">
+            <h3 class="text-lg font-semibold mb-4">📚 Resources</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="#" class="flex items-center gap-4 p-4 bg-bg-lighter rounded-lg hover:bg-bg-light transition">
+                    <span class="text-2xl">📖</span>
+                    <div>
+                        <div class="font-semibold">API Documentation</div>
+                        <div class="text-text-muted text-sm">View endpoints & examples</div>
+                    </div>
+                </a>
+                <a href="#" class="flex items-center gap-4 p-4 bg-bg-lighter rounded-lg hover:bg-bg-light transition">
+                    <span class="text-2xl">💻</span>
+                    <div>
+                        <div class="font-semibold">Code Examples</div>
+                        <div class="text-text-muted text-sm">Python, JavaScript, & more</div>
+                    </div>
+                </a>
+                <a href="index.html#demo" class="flex items-center gap-4 p-4 bg-bg-lighter rounded-lg hover:bg-bg-light transition">
+                    <span class="text-2xl">🎾</span>
+                    <div>
+                        <div class="font-semibold">Try Demo</div>
+                        <div class="text-text-muted text-sm">Test the API without code</div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Create API Key Modal -->
-    <div class="modal-overlay" id="create-key-modal">
-        <div class="modal">
-            <h3>Generate New API Key</h3>
-            <div class="form-group" style="margin-top: 20px;">
-                <label>Key Name (optional)</label>
-                <input type="text" id="key-name" placeholder="e.g., Production, Development">
+    <!-- Create Key Modal -->
+    <div id="create-key-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="glass-card max-w-md w-full mx-4 p-6 rounded-lg">
+            <h3 class="text-xl font-bold mb-4">Generate New API Key</h3>
+            <div class="mb-4">
+                <label class="text-sm font-medium mb-2 block">Key Name (optional)</label>
+                <input type="text" id="key-name" placeholder="My App" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeCreateKeyModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="generateApiKey()">Generate</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Show API Key Modal -->
-    <div class="modal-overlay" id="show-key-modal">
-        <div class="modal">
-            <h3>🔑 Your New API Key</h3>
-            <p style="color: var(--text-secondary); margin: 15px 0;">
-                Copy this key now. You won't be able to see it again!
-            </p>
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; font-family: monospace; word-break: break-all; border: 1px solid var(--gold);">
-                <span id="new-api-key"></span>
-            </div>
-            <button class="btn btn-primary" style="margin-top: 20px; width: 100%;" onclick="copyApiKey()">
-                Copy to Clipboard
-            </button>
-            <button class="btn btn-secondary" style="margin-top: 10px; width: 100%;" onclick="closeShowKeyModal()">
-                Done
-            </button>
-        </div>
-    </div>
-
-    <!-- Upgrade Modal -->
-    <div class="modal-overlay" id="upgrade-modal">
-        <div class="modal">
-            <h3>🚀 Upgrade to Pro</h3>
-            <div style="text-align: center; margin: 20px 0;">
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--gold);">$49<span style="font-size: 1rem; color: var(--text-secondary);">/month</span></div>
-            </div>
-            <ul style="list-style: none; color: var(--text-secondary);">
-                <li style="padding: 8px 0;">✓ Unlimited predictions</li>
-                <li style="padding: 8px 0;">✓ All sports supported</li>
-                <li style="padding: 8px 0;">✓ Priority support</li>
-                <li style="padding: 8px 0;">✓ Historical data</li>
-            </ul>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeUpgradeModal()">Maybe Later</button>
-                <button class="btn btn-primary" onclick="processUpgrade()">Upgrade Now</button>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeCreateKeyModal()" class="btn btn-secondary px-4 py-2">Cancel</button>
+                <button onclick="generateApiKey()" class="btn btn-primary px-4 py-2">Generate</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <!-- Show Key Modal -->
+    <div id="show-key-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="glass-card max-w-md w-full mx-4 p-6 rounded-lg">
+            <h3 class="text-xl font-bold mb-2">Your New API Key</h3>
+            <p class="text-text-muted text-sm mb-4">Copy this key now. You won't be able to see it again!</p>
+            <div class="bg-bg-lighter p-4 rounded-lg mb-4 break-all font-mono text-sm" id="new-api-key"></div>
+            <div class="flex gap-3 justify-end">
+                <button onclick="copyApiKey()" class="btn btn-secondary px-4 py-2">Copy</button>
+                <button onclick="closeShowKeyModal()" class="btn btn-primary px-4 py-2">Done</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Check authentication
+        const API_BASE_URL = '';
+        let apiKeys = [];
+
+        // Check auth
         const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        
         if (!token) {
             window.location.href = 'login.html';
         }
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUserData();
-            loadApiKeys();
-            loadUsageStats();
-        });
-
         // Load user data
-        function loadUserData() {
-            document.getElementById('user-name').textContent = user.name || 'User';
-            document.getElementById('account-email').textContent = user.email || '-';
-            document.getElementById('user-tier').textContent = (user.tier || 'free').toUpperCase();
-            document.getElementById('member-since').textContent = new Date().toLocaleDateString();
-            
-            if (user.tier === 'pro') {
-                document.getElementById('upgrade-btn').style.display = 'none';
-                document.getElementById('usage-limit').textContent = 'Unlimited';
-            }
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.email) {
+            document.getElementById('user-email').textContent = user.email;
         }
-
-        // Mock API keys data
-        let apiKeys = [];
 
         // Load API keys
         async function loadApiKeys() {
             try {
-                // API call would go here
-                // const response = await fetch('/api-keys', {
-                //     headers: { 'Authorization': 'Bearer ' + token }
-                // });
-                // apiKeys = await response.json();
+                const response = await fetch(`${API_BASE_URL}/api-keys`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 
-                // Mock data for demo
-                apiKeys = [
-                    {
-                        id: 'key_1',
-                        name: 'Default Key',
-                        key: 'sn_live_******************************abcd',
-                        created_at: '2026-02-20T10:30:00Z',
-                        last_used: '2026-02-25T08:15:00Z'
-                    }
-                ];
+                if (!response.ok) throw new Error('Failed to load keys');
                 
+                apiKeys = await response.json();
                 renderApiKeys();
+                updateUsageStats();
             } catch (error) {
-                showToast('Failed to load API keys', 'error');
+                console.error('Error loading API keys:', error);
             }
         }
 
-        // Render API keys list
         function renderApiKeys() {
             const container = document.getElementById('api-keys-list');
             
             if (apiKeys.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <p>No API keys yet. Generate one to get started!</p>
-                    </div>
-                `;
+                container.innerHTML = '<p class="text-text-muted text-center py-4">No API keys yet. Generate one to get started.</p>';
                 return;
             }
             
             container.innerHTML = apiKeys.map(key => `
-                <div class="api-key-item">
-                    <div class="api-key-info">
-                        <div class="api-key-name">${key.name || 'Unnamed Key'}</div>
-                        <div class="api-key-value">${key.key}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                <div class="flex justify-between items-center p-4 bg-bg-lighter rounded-lg">
+                    <div>
+                        <div class="font-semibold">${key.name || 'Unnamed Key'}</div>
+                        <div class="text-text-muted text-sm font-mono">${key.api_key}</div>
+                        <div class="text-text-muted text-xs mt-1">
                             Created: ${new Date(key.created_at).toLocaleDateString()}
-                            ${key.last_used ? `• Last used: ${new Date(key.last_used).toLocaleDateString()}` : ''}
+                            ${key.last_used ? `• Used: ${new Date(key.last_used).toLocaleDateString()}` : ''}
                         </div>
                     </div>
-                    <div class="api-key-actions">
-                        <button class="btn btn-danger btn-small" onclick="revokeKey('${key.id}')">Revoke</button>
-                    </div>
+                    <button onclick="revokeKey('${key.id}')" class="btn btn-danger px-3 py-1 text-sm">Revoke</button>
                 </div>
             `).join('');
         }
 
-        // Show create key modal
+        function updateUsageStats() {
+            // Mock stats for now
+            document.getElementById('today-requests').textContent = Math.floor(Math.random() * 5);
+            document.getElementById('month-requests').textContent = Math.floor(Math.random() * 50);
+            document.getElementById('total-requests').textContent = Math.floor(Math.random() * 200);
+            document.getElementById('usage-bar').style.width = '30%';
+        }
+
         function showCreateKeyModal() {
-            document.getElementById('create-key-modal').classList.add('show');
+            document.getElementById('create-key-modal').classList.remove('hidden');
             document.getElementById('key-name').value = '';
-            document.getElementById('key-name').focus();
         }
 
-        // Close create key modal
         function closeCreateKeyModal() {
-            document.getElementById('create-key-modal').classList.remove('show');
+            document.getElementById('create-key-modal').classList.add('hidden');
         }
 
-        // Generate new API key
         async function generateApiKey() {
             const name = document.getElementById('key-name').value.trim();
             
             try {
-                // API call would go here
-                // const response = await fetch('/api-keys', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Authorization': 'Bearer ' + token,
-                //         'Content-Type': 'application/json'
-                //     },
-                //     body: JSON.stringify({ name: name || 'My App' })
-                // });
-                // const data = await response.json();
-                
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // Generate mock key
-                const newKey = 'sn_live_' + Array(40).fill(0).map(() => 
-                    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]
-                ).join('');
-                
-                // Add to list
-                apiKeys.push({
-                    id: 'key_' + Date.now(),
-                    name: name || 'My App',
-                    key: newKey.substring(0, 20) + '******************************' + newKey.substring(-4),
-                    created_at: new Date().toISOString(),
-                    last_used: null
+                const response = await fetch(`${API_BASE_URL}/api-keys`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: name || 'My App' })
                 });
                 
+                if (!response.ok) throw new Error('Failed to create key');
+                
+                const data = await response.json();
+                
                 closeCreateKeyModal();
+                document.getElementById('new-api-key').textContent = data.api_key;
+                document.getElementById('show-key-modal').classList.remove('hidden');
                 
-                // Show the new key
-                document.getElementById('new-api-key').textContent = newKey;
-                document.getElementById('show-key-modal').classList.add('show');
-                
-                renderApiKeys();
-                
+                loadApiKeys();
             } catch (error) {
-                showToast('Failed to generate API key', 'error');
+                alert('Error: ' + error.message);
             }
         }
 
-        // Close show key modal
         function closeShowKeyModal() {
-            document.getElementById('show-key-modal').classList.remove('show');
+            document.getElementById('show-key-modal').classList.add('hidden');
         }
 
-        // Copy API key to clipboard
         function copyApiKey() {
             const key = document.getElementById('new-api-key').textContent;
             navigator.clipboard.writeText(key).then(() => {
-                showToast('API key copied to clipboard!');
+                alert('Copied to clipboard!');
             });
         }
 
-        // Revoke API key
         async function revokeKey(keyId) {
-            if (!confirm('Are you sure? This action cannot be undone.')) {
-                return;
-            }
+            if (!confirm('Are you sure? This action cannot be undone.')) return;
             
             try {
-                // API call would go here
-                // await fetch(`/api-keys/${keyId}`, {
-                //     method: 'DELETE',
-                //     headers: { 'Authorization': 'Bearer ' + token }
-                // });
+                const response = await fetch(`${API_BASE_URL}/api-keys/${keyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 
-                apiKeys = apiKeys.filter(k => k.id !== keyId);
-                renderApiKeys();
-                showToast('API key revoked successfully');
+                if (!response.ok) throw new Error('Failed to revoke key');
+                
+                loadApiKeys();
             } catch (error) {
-                showToast('Failed to revoke API key', 'error');
+                alert('Error: ' + error.message);
             }
         }
 
-        // Load usage stats
-        async function loadUsageStats() {
-            try {
-                // API call would go here
-                // const response = await fetch('/api/v1/usage', {
-                //     headers: { 'Authorization': 'Bearer ' + token }
-                // });
-                // const stats = await response.json();
-                
-                // Mock stats
-                const stats = {
-                    today: 7,
-                    month: 143,
-                    total: 1256,
-                    limit: user.tier === 'pro' ? null : 10
-                };
-                
-                document.getElementById('today-requests').textContent = stats.today;
-                document.getElementById('month-requests').textContent = stats.month;
-                document.getElementById('total-requests').textContent = stats.total;
-                
-                // Update usage bar
-                if (stats.limit) {
-                    const percentage = (stats.today / stats.limit) * 100;
-                    document.getElementById('usage-bar').style.width = percentage + '%';
-                    document.getElementById('usage-limit').textContent = `${stats.today} / ${stats.limit} daily`;
-                    
-                    if (percentage >= 90) {
-                        document.getElementById('usage-bar').style.background = 'var(--error)';
-                    }
-                } else {
-                    document.getElementById('usage-bar').style.width = '100%';
-                }
-                
-            } catch (error) {
-                console.error('Failed to load usage stats:', error);
-            }
-        }
-
-        // Show upgrade modal
-        function showUpgradeModal() {
-            document.getElementById('upgrade-modal').classList.add('show');
-        }
-
-        // Close upgrade modal
-        function closeUpgradeModal() {
-            document.getElementById('upgrade-modal').classList.remove('show');
-        }
-
-        // Process upgrade
-        async function processUpgrade() {
-            showToast('Redirecting to payment...');
-            // In production, redirect to Stripe/PayPal
-            setTimeout(() => {
-                closeUpgradeModal();
-            }, 1500);
-        }
-
-        // Logout
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = 'index.html';
         }
 
-        // Show toast notification
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
         // Close modals on overlay click
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.remove('show');
-                }
-            });
+        document.getElementById('create-key-modal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeCreateKeyModal();
         });
+        document.getElementById('show-key-modal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeShowKeyModal();
+        });
+
+        // Load data
+        loadApiKeys();
     </script>
 </body>
 </html>
