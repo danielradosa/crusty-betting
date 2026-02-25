@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import secrets
 import os
+import bcrypt
 
 from database import get_db, APIKey, User, UsageLog
 
@@ -14,30 +15,38 @@ SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
-# Use bcrypt with specific settings to handle version compatibility
+# Use bcrypt directly to avoid passlib's 72 byte check
 pwd_context = CryptContext(
     schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__ident="2b",
-    bcrypt__min_rounds=10
+    deprecated="auto"
 )
 security = HTTPBearer(auto_error=False)
 
-def verify_password(plain_password, hashed_password):
-    # bcrypt has 72 byte limit, truncate if necessary
-    plain_password_bytes = plain_password.encode('utf-8')
-    if len(plain_password_bytes) > 72:
-        plain_password_bytes = plain_password_bytes[:72]
-    return pwd_context.verify(plain_password_bytes, hashed_password)
-
-def get_password_hash(password):
-    # bcrypt has 72 byte limit, truncate if necessary
-    # Encode to bytes, truncate to 72 bytes, decode back
+def truncate_password(password: str) -> str:
+    """Truncate password to 72 bytes (bcrypt limit)"""
     password_bytes = password.encode('utf-8')
     if len(password_bytes) > 72:
-        password_bytes = password_bytes[:72]
-    # Use the bytes directly with passlib
-    return pwd_context.hash(password_bytes)
+        return password_bytes[:72].decode('utf-8', errors='ignore')
+    return password
+
+def verify_password(plain_password, hashed_password):
+    """Verify password using bcrypt directly"""
+    try:
+        # Truncate to 72 bytes
+        plain_password = truncate_password(plain_password)
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception as e:
+        print(f"Password verification error: {e}")
+        return False
+
+def get_password_hash(password):
+    """Hash password using bcrypt directly with truncation"""
+    # Truncate to 72 bytes before hashing
+    password = truncate_password(password)
+    # Generate salt and hash
+    salt = bcrypt.gensalt(rounds=10)
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
