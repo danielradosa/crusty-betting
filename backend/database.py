@@ -47,6 +47,16 @@ class UsageLog(Base):
     # Relationships
     user = relationship("User", back_populates="usage_logs")
 
+class DemoUsage(Base):
+    __tablename__ = "demo_usage"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    client_ip = Column(String(45), unique=True, index=True, nullable=False)  # IPv6 max length
+    count = Column(Integer, default=0)
+    reset_time = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sports_numerology.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})

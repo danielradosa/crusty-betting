@@ -7,10 +7,9 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 import os
-import json
 from collections import defaultdict
 
-from database import create_tables, get_db, User, APIKey
+from database import create_tables, get_db, User, APIKey, DemoUsage
 from auth import (
     get_password_hash, verify_password, create_access_token, 
     get_current_user, get_api_key_user, generate_api_key, 
@@ -18,39 +17,7 @@ from auth import (
 )
 from numerology import analyze_match
 
-# File-based rate limiting storage
-RATE_LIMIT_FILE = "/tmp/demo_rate_limits.json"
-
-def load_rate_limits():
-    """Load rate limits from file"""
-    try:
-        if os.path.exists(RATE_LIMIT_FILE):
-            with open(RATE_LIMIT_FILE, 'r') as f:
-                data = json.load(f)
-                # Convert string timestamps back to datetime
-                for ip, info in data.items():
-                    info['reset_time'] = datetime.fromisoformat(info['reset_time'])
-                return data
-    except Exception:
-        pass
-    return {}
-
-def save_rate_limits(data):
-    """Save rate limits to file"""
-    try:
-        # Convert datetime to ISO string for JSON serialization
-        serializable = {}
-        for ip, info in data.items():
-            serializable[ip] = {
-                'count': info['count'],
-                'reset_time': info['reset_time'].isoformat()
-            }
-        with open(RATE_LIMIT_FILE, 'w') as f:
-            json.dump(serializable, f)
-    except Exception as e:
-        print(f"Error saving rate limits: {e}")
-
-def get_client_ip(req: Request):
+def get_client_ip(req: Request) -> str:
     """Extract client IP from request"""
     # Try X-Forwarded-For first (for proxies/load balancers)
     forwarded = req.headers.get("X-Forwarded-For")
@@ -65,41 +32,44 @@ def get_client_ip(req: Request):
         return req.client.host
     return "unknown"
 
-def check_demo_rate_limit(client_ip: str) -> tuple[bool, int, int]:
+def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, int]:
     """
-    Check if client has exceeded demo rate limit
+    Check if client has exceeded demo rate limit using PostgreSQL
     Returns: (allowed, current_count, remaining)
     """
-    demo_usage = load_rate_limits()
     now = datetime.utcnow()
     
     # Get or create entry for this IP
-    if client_ip not in demo_usage:
-        demo_usage[client_ip] = {
-            "count": 0,
-            "reset_time": now + timedelta(days=1)
-        }
+    usage = db.query(DemoUsage).filter(DemoUsage.client_ip == client_ip).first()
     
-    ip_data = demo_usage[client_ip]
+    if not usage:
+        # Create new entry
+        usage = DemoUsage(
+            client_ip=client_ip,
+            count=0,
+            reset_time=now + timedelta(days=1)
+        )
+        db.add(usage)
+        db.commit()
     
     # Reset if day has passed
-    if now > ip_data["reset_time"]:
-        ip_data["count"] = 0
-        ip_data["reset_time"] = now + timedelta(days=1)
+    if now > usage.reset_time:
+        usage.count = 0
+        usage.reset_time = now + timedelta(days=1)
+        db.commit()
     
     # Check limit (max 5 per day)
-    if ip_data["count"] >= 5:
-        save_rate_limits(demo_usage)
-        return False, ip_data["count"], 0
+    if usage.count >= 5:
+        return False, usage.count, 0
     
     # Increment count
-    ip_data["count"] += 1
-    remaining = 5 - ip_data["count"]
+    usage.count += 1
+    usage.updated_at = now
+    db.commit()
     
-    # Save updated limits
-    save_rate_limits(demo_usage)
+    remaining = 5 - usage.count
     
-    return True, ip_data["count"], remaining
+    return True, usage.count, remaining
 
 # Create app
 app = FastAPI(
@@ -418,13 +388,13 @@ def analyze_match_endpoint(
 
 # Demo endpoint (no auth required, max 5 per IP per day)
 @app.post("/api/v1/demo-analyze", response_model=MatchAnalysisResponse)
-def demo_analyze(request: DemoRequest, req: Request):
+def demo_analyze(request: DemoRequest, req: Request, db: Session = Depends(get_db)):
     """Demo endpoint - max 5 uses per IP per day"""
     # Get client IP
     client_ip = get_client_ip(req)
     
-    # Check rate limit
-    allowed, count, remaining = check_demo_rate_limit(client_ip)
+    # Check rate limit using database
+    allowed, count, remaining = check_demo_rate_limit_db(client_ip, db)
     
     if not allowed:
         raise HTTPException(
