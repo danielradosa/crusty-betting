@@ -195,8 +195,21 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
         
+        # Debug logging
+        print(f"Signup attempt for: {user_data.email}")
+        print(f"Password length: {len(user_data.password)} chars, {len(user_data.password.encode('utf-8'))} bytes")
+        
         # Create user
-        hashed_password = get_password_hash(user_data.password)
+        try:
+            hashed_password = get_password_hash(user_data.password)
+            print(f"Password hashed successfully")
+        except Exception as e:
+            print(f"Password hash error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Password processing failed: {str(e)}"
+            )
+        
         new_user = User(
             email=user_data.email,
             password_hash=hashed_password
