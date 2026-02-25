@@ -510,6 +510,51 @@ def demo_status(req: Request, db: Session = Depends(get_db)):
         "limited": limited
     }
 
+# Get user usage statistics
+@app.get("/api/v1/usage-stats")
+def get_usage_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get real usage statistics for the authenticated user"""
+    from datetime import date
+    
+    now = datetime.utcnow()
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
+    
+    # This month
+    month_start = datetime.combine(today.replace(day=1), datetime.min.time())
+    
+    # Count requests
+    today_count = db.query(UsageLog).filter(
+        UsageLog.user_id == current_user.id,
+        UsageLog.timestamp >= today_start,
+        UsageLog.timestamp <= today_end,
+        UsageLog.success == True
+    ).count()
+    
+    month_count = db.query(UsageLog).filter(
+        UsageLog.user_id == current_user.id,
+        UsageLog.timestamp >= month_start,
+        UsageLog.timestamp <= today_end,
+        UsageLog.success == True
+    ).count()
+    
+    total_count = db.query(UsageLog).filter(
+        UsageLog.user_id == current_user.id,
+        UsageLog.success == True
+    ).count()
+    
+    return {
+        "today": today_count,
+        "this_month": month_count,
+        "total": total_count,
+        "limit": 10,
+        "reset_time": today_end.isoformat()
+    }
+
 # Static files and frontend
 # Handle both local dev and Docker container paths
 base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -577,6 +622,10 @@ def serve_dashboard_html():
 @app.get("/index.html")
 def serve_index_html():
     return serve_landing()
+
+@app.get("/docs")
+def serve_docs():
+    return FileResponse(os.path.join(frontend_path, "docs.html"))
 
 # Railway provides PORT env var, fallback to 8000
 port = int(os.getenv("PORT", 8000))

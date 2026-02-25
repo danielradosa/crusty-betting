@@ -87,7 +87,7 @@
             </header>
 
             <section class="resource-grid">
-                <a class="resource" href="#">
+                <a class="resource" href="/docs">
                     <h3>📖 API Documentation</h3>
                     <p>Endpoints & examples</p>
                 </a>
@@ -181,17 +181,25 @@
       `).join('');
         }
 
-        function updateUsageStats() {
-            const today = Math.floor(Math.random() * 5);
-            const month = Math.floor(Math.random() * 50);
-            const total = Math.floor(Math.random() * 200);
-
-            document.getElementById('today-requests').textContent = today;
-            document.getElementById('month-requests').textContent = month;
-            document.getElementById('total-requests').textContent = total;
-
-            document.getElementById('usage-now').textContent = today;
-            document.getElementById('usage-bar').value = Math.min(today, 10);
+        async function updateUsageStats() {
+            try {
+                const response = await fetch('/api/v1/usage-stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load stats');
+                
+                const data = await response.json();
+                
+                document.getElementById('today-requests').textContent = data.today;
+                document.getElementById('month-requests').textContent = data.this_month;
+                document.getElementById('total-requests').textContent = data.total;
+                document.getElementById('usage-now').textContent = data.today;
+                document.getElementById('usage-bar').value = Math.min(data.today, data.limit);
+                document.getElementById('usage-bar').max = data.limit;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
         }
 
         function showCreateKeyModal() {
