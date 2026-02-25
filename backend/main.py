@@ -601,12 +601,17 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
 
 # Seed players data (run once)
 @app.post("/admin/seed-players")
-def seed_players(db: Session = Depends(get_db)):
-    """Seed initial player database (tennis and table tennis)"""
+def seed_players(force: bool = False, db: Session = Depends(get_db)):
+    """Seed player database (tennis and table tennis). Use force=true to reset and re-seed."""
     # Check if already seeded
-    existing = db.query(Player).first()
-    if existing:
-        return {"message": "Already seeded", "count": db.query(Player).count()}
+    existing_count = db.query(Player).count()
+    if existing_count > 0 and not force:
+        return {"message": "Already seeded", "count": existing_count, "hint": "Use ?force=true to re-seed with updated data"}
+    
+    # Clear existing if forcing re-seed
+    if force and existing_count > 0:
+        db.query(Player).delete()
+        db.commit()
     
     players = [
         # Tennis - ATP Top 100 + more
@@ -800,7 +805,8 @@ def seed_players(db: Session = Depends(get_db)):
     
     db.commit()
     
-    return {"message": "Players seeded successfully", "count": len(players)}
+    action = "Re-seeded" if force else "Seeded"
+    return {"message": f"{action} {len(players)} players successfully", "count": len(players), "force": force}
 
 # Static files and frontend
 # Handle both local dev and Docker container paths
