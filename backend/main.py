@@ -103,12 +103,25 @@ class DemoRequest(BaseModel):
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    create_tables()
+    try:
+        create_tables()
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Warning: Database initialization error: {e}")
+        # Continue anyway - might be first deploy
 
 # Health check
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "service": "sports-numerology-api"}
+    return {
+        "status": "healthy",
+        "service": "sports-numerology-api",
+        "version": "1.0.0",
+        "frontend_path": frontend_path,
+        "static_path": static_path,
+        "frontend_exists": os.path.exists(frontend_path),
+        "static_exists": os.path.exists(static_path)
+    }
 
 # Authentication endpoints
 @app.post("/auth/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -363,20 +376,39 @@ else:
 
 @app.get("/")
 def serve_landing():
-    return FileResponse(os.path.join(frontend_path, "index.html"))
+    try:
+        return FileResponse(os.path.join(frontend_path, "index.html"))
+    except Exception as e:
+        print(f"Error serving index.html: {e}")
+        return {"message": "Sports Numerology API", "status": "running", "frontend_path": frontend_path}
 
 @app.get("/dashboard")
 def serve_dashboard():
-    return FileResponse(os.path.join(frontend_path, "dashboard.html"))
+    try:
+        return FileResponse(os.path.join(frontend_path, "dashboard.html"))
+    except Exception as e:
+        print(f"Error serving dashboard.html: {e}")
+        return {"error": "Dashboard not available", "path": frontend_path}
 
 @app.get("/login")
 def serve_login():
-    return FileResponse(os.path.join(frontend_path, "login.html"))
+    try:
+        return FileResponse(os.path.join(frontend_path, "login.html"))
+    except Exception as e:
+        print(f"Error serving login.html: {e}")
+        return {"error": "Login page not available", "path": frontend_path}
 
 @app.get("/signup")
 def serve_signup():
-    return FileResponse(os.path.join(frontend_path, "signup.html"))
+    try:
+        return FileResponse(os.path.join(frontend_path, "signup.html"))
+    except Exception as e:
+        print(f"Error serving signup.html: {e}")
+        return {"error": "Signup page not available", "path": frontend_path}
+
+# Railway provides PORT env var, fallback to 8000
+port = int(os.getenv("PORT", 8000))
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=port)
