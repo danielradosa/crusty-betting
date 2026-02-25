@@ -18,7 +18,7 @@ from auth import (
 from numerology import analyze_match
 
 # In-memory store for demo rate limiting (IP -> {count, reset_time})
-demo_usage = defaultdict(lambda: {"count": 0, "reset_time": datetime.utcnow() + timedelta(days=1))
+demo_usage = defaultdict(lambda: {"count": 0, "reset_time": datetime.utcnow() + timedelta(days=1)})
 
 # Create app
 app = FastAPI(
