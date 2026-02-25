@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sports Numerology Predictions | 🔮 SPORTOLOGY API</title>
-    <!-- No CSS - style it yourself -->
-    <link rel="stylesheet" href="../static/styles.css">
-    <link rel="stylesheet" href="../static/utilities.css">
+    <title>Sports Numerology API - Predict Match Outcomes</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
     <header>
         <nav>
-            <a href="index.html">🔮 SPORTOLOGY</a>
-            <div>
+            <a href="index.html">🔮 Sports Numerology</a>
+            <div id="nav-links">
                 <a href="#demo">Demo</a>
                 <a href="#features">Features</a>
                 <a href="#pricing">Pricing</a>
-                <a href="login.html">Sign In</a>
-                <a href="signup.html">Get Started</a>
+                <a href="login.html" id="login-link">Sign In</a>
+                <a href="signup.html" id="signup-link">Get Started</a>
+                <a href="dashboard.html" id="dashboard-link" hidden>Dashboard</a>
+                <button onclick="logout()" id="logout-btn" hidden>Logout</button>
             </div>
         </nav>
     </header>
@@ -26,10 +26,10 @@
         <section id="hero">
             <article>
                 <h1>Predict Sports Matches with Numerology</h1>
-                <p>Scientific analysis of athlete birthdates vs match timing. <br>Get data-driven predictions for tennis, boxing, MMA, and more.</p>
+                <p>Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.</p>
                 <div>
-                    <a href="#demo" class="cta-primary">Try It Free</a>
-                    <a href="#features" class="cta-secondary">Learn More</a>
+                    <a href="#demo">Try It Free</a>
+                    <a href="#features">Learn More</a>
                 </div>
                 <aside>
                     <figure>
@@ -175,11 +175,28 @@
     </main>
 
     <footer>
-        <p>&copy; 2026 SPORTOLOGY API. All rights reserved.</p>
-        <p><strong>Made by:</strong> <a href="https://danielradosa.com">Daniel Radosa</a></p>
+        <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
     </footer>
 
     <script>
+        // Check auth state
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (token) {
+            // User is logged in - show dashboard/logout, hide login/signup
+            document.getElementById('login-link').hidden = true;
+            document.getElementById('signup-link').hidden = true;
+            document.getElementById('dashboard-link').hidden = false;
+            document.getElementById('logout-btn').hidden = false;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
         async function analyzeMatch() {
             const btn = document.getElementById('analyze-btn');
             const loading = document.getElementById('loading');
