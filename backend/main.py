@@ -601,12 +601,26 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
 
 # Seed players data (run once)
 @app.post("/admin/seed-players")
-def seed_players(force: bool = False, db: Session = Depends(get_db)):
-    """Seed player database (tennis and table tennis). Use force=true to reset and re-seed."""
+def seed_players(
+    request: Request,
+    force: bool = False, 
+    db: Session = Depends(get_db)
+):
+    """Seed player database. Requires ADMIN_KEY header."""
+    # Verify admin key
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+    
     # Check if already seeded
     existing_count = db.query(Player).count()
     if existing_count > 0 and not force:
-        return {"message": "Already seeded", "count": existing_count, "hint": "Use ?force=true to re-seed with updated data"}
+        return {"message": "Already seeded", "count": existing_count, "hint": "Use ?force=true to re-seed"}
     
     # Clear existing if forcing re-seed
     if force and existing_count > 0:
