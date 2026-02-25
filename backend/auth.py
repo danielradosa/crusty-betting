@@ -25,13 +25,19 @@ security = HTTPBearer(auto_error=False)
 
 def verify_password(plain_password, hashed_password):
     # bcrypt has 72 byte limit, truncate if necessary
-    plain_password = plain_password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
-    return pwd_context.verify(plain_password, hashed_password)
+    plain_password_bytes = plain_password.encode('utf-8')
+    if len(plain_password_bytes) > 72:
+        plain_password_bytes = plain_password_bytes[:72]
+    return pwd_context.verify(plain_password_bytes, hashed_password)
 
 def get_password_hash(password):
     # bcrypt has 72 byte limit, truncate if necessary
-    password = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
-    return pwd_context.hash(password)
+    # Encode to bytes, truncate to 72 bytes, decode back
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+    # Use the bytes directly with passlib
+    return pwd_context.hash(password_bytes)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()

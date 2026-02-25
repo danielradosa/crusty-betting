@@ -187,12 +187,6 @@ def health_check():
 @app.post("/auth/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
-        # Check password length (bcrypt limit is 72 bytes)
-        password_bytes = user_data.password.encode('utf-8')
-        if len(password_bytes) > 72:
-            # Truncate password to 72 bytes
-            user_data.password = password_bytes[:72].decode('utf-8', errors='ignore')
-        
         # Check if user exists
         existing_user = db.query(User).filter(User.email == user_data.email).first()
         if existing_user:
