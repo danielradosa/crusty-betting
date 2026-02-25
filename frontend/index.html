@@ -19,8 +19,8 @@
                 <a href="#pricing">Pricing</a>
                 <a href="login.html" id="login-link">Sign In</a>
                 <a href="signup.html" id="signup-link">Get Started</a>
-                <a href="dashboard.html" id="dashboard-link" hidden>Dashboard</a>
-                <button onclick="logout()" id="logout-btn" hidden>Logout</button>
+                <a href="dashboard.html" id="dashboard-link" style="display:none">Dashboard</a>
+                <button onclick="logout()" id="logout-btn" style="display:none">Logout</button>
             </div>
         </nav>
     </header>
@@ -182,31 +182,42 @@
     </footer>
 
     <script>
-        // Check auth state immediately and on page load
+        // Check auth state after DOM is ready
         function updateAuthUI() {
             const token = localStorage.getItem('token');
-            
+            const loginLink = document.getElementById('login-link');
+            const signupLink = document.getElementById('signup-link');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            // Elements must exist
+            if (!loginLink || !signupLink || !dashboardLink || !logoutBtn) {
+                console.error('Auth UI elements not found');
+                return;
+            }
+
             if (token) {
                 // User is logged in - show dashboard/logout, hide login/signup
-                document.getElementById('login-link').hidden = true;
-                document.getElementById('signup-link').hidden = true;
-                document.getElementById('dashboard-link').hidden = false;
-                document.getElementById('logout-btn').hidden = false;
+                loginLink.style.display = 'none';
+                signupLink.style.display = 'none';
+                dashboardLink.style.display = 'inline';
+                logoutBtn.style.display = 'inline-block';
             } else {
                 // User is logged out - show login/signup, hide dashboard/logout
-                document.getElementById('login-link').hidden = false;
-                document.getElementById('signup-link').hidden = false;
-                document.getElementById('dashboard-link').hidden = true;
-                document.getElementById('logout-btn').hidden = true;
+                loginLink.style.display = 'inline';
+                signupLink.style.display = 'inline';
+                dashboardLink.style.display = 'none';
+                logoutBtn.style.display = 'none';
             }
         }
-        
-        // Run immediately
-        updateAuthUI();
-        
-        // Also run on page load (in case script runs before DOM ready)
-        document.addEventListener('DOMContentLoaded', updateAuthUI);
-        
+
+        // Run only after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateAuthUI);
+        } else {
+            updateAuthUI();
+        }
+
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
