@@ -9,7 +9,7 @@ from typing import List, Optional
 import os
 from collections import defaultdict
 
-from database import create_tables, get_db, User, APIKey, DemoUsage, Player
+from database import create_tables, get_db, User, APIKey, DemoUsage, Player, UsageLog
 from auth import (
     get_password_hash, verify_password, create_access_token, 
     get_current_user, get_api_key_user, generate_api_key, 
@@ -519,15 +519,16 @@ def get_usage_stats(
     """Get real usage statistics for the authenticated user"""
     from datetime import date
     
+    # Use UTC consistently (matches database timestamps)
     now = datetime.utcnow()
-    today = date.today()
+    today = now.date()
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
     
     # This month
     month_start = datetime.combine(today.replace(day=1), datetime.min.time())
     
-    # Count ALL requests (both success and fail) for today to show true usage
+    # Count ALL requests for today
     today_count = db.query(UsageLog).filter(
         UsageLog.user_id == current_user.id,
         UsageLog.timestamp >= today_start,
@@ -558,6 +559,31 @@ def get_usage_stats(
             "Expires": "0"
         }
     )
+
+# Debug endpoint - view recent usage logs
+@app.get("/api/v1/debug/usage-logs")
+def debug_usage_logs(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Debug: View recent usage logs for current user"""
+    logs = db.query(UsageLog).filter(
+        UsageLog.user_id == current_user.id
+    ).order_by(UsageLog.timestamp.desc()).limit(10).all()
+    
+    return {
+        "user_id": current_user.id,
+        "email": current_user.email,
+        "recent_logs": [
+            {
+                "id": log.id,
+                "endpoint": log.endpoint,
+                "timestamp": log.timestamp.isoformat(),
+                "success": log.success
+            }
+            for log in logs
+        ]
+    }
 
 # Player database endpoints
 @app.get("/api/v1/players")

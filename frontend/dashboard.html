@@ -501,7 +501,8 @@
                 document.getElementById('p2-score').textContent = data.player2?.score || '-';
                 
                 result.hidden = false;
-                updateUsageStats();
+                // Delay slightly to ensure DB has committed
+                setTimeout(updateUsageStats, 500);
             } catch (error) {
                 alert('Error: ' + error.message);
             } finally {
