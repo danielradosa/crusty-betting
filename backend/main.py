@@ -343,11 +343,23 @@ def demo_analyze(request: DemoRequest):
         )
 
 # Static files and frontend
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-static_path = os.path.join(os.path.dirname(__file__), "..", "static")
+# Handle both local dev and Docker container paths
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+frontend_path = os.path.join(base_path, "frontend")
+static_path = os.path.join(base_path, "static")
 
+# Fallback for Railway deployment structure
+if not os.path.exists(frontend_path):
+    frontend_path = "/app/frontend"
+if not os.path.exists(static_path):
+    static_path = "/app/static"
+
+# Mount static files
 if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
+    print(f"Static files mounted from: {static_path}")
+else:
+    print(f"Warning: Static path not found: {static_path}")
 
 @app.get("/")
 def serve_landing():
