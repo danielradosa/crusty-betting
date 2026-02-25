@@ -475,6 +475,23 @@ def serve_signup():
         print(f"Error serving signup.html: {e}")
         return {"error": "Signup page not available", "path": frontend_path}
 
+# Also serve .html versions for direct links
+@app.get("/login.html")
+def serve_login_html():
+    return serve_login()
+
+@app.get("/signup.html")
+def serve_signup_html():
+    return serve_signup()
+
+@app.get("/dashboard.html")
+def serve_dashboard_html():
+    return serve_dashboard()
+
+@app.get("/index.html")
+def serve_index_html():
+    return serve_landing()
+
 # Railway provides PORT env var, fallback to 8000
 port = int(os.getenv("PORT", 8000))
 

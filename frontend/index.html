@@ -254,37 +254,37 @@
                 // Determine endpoint based on auth status
                 const endpoint = isLoggedIn() 
                     ? '/api/v1/analyze-match' 
-                    : '/api/v1/analyze-match-demo';
+                    : '/api/v1/demo-analyze';
                 
                 const headers = {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 };
                 
-                // Simulate API call (replace with actual endpoint)
-                // const response = await fetch(endpoint, {
-                //     method: 'POST',
-                //     headers: headers,
-                //     body: JSON.stringify(data)
-                // });
-                // const result = await response.json();
+                // Make actual API call
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                });
                 
-                // Simulated response for demo
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
                 
-                // Generate mock result
-                const p1Score = Math.floor(Math.random() * 30) + 70;
-                const p2Score = Math.floor(Math.random() * 30) + 70;
-                const winner = p1Score > p2Score ? player1 : player2;
-                const confidence = Math.abs(p1Score - p2Score) + 60;
+                const apiResult = await response.json();
                 
+                // Format result for display
                 const result = {
-                    winner: winner,
-                    player1_score: p1Score,
-                    player2_score: p2Score,
-                    confidence: Math.min(confidence, 95),
-                    lucky_number: Math.floor(Math.random() * 9) + 1,
-                    description: `${winner} has a stronger numerological alignment with the match date. The life path numbers indicate favorable energy for this competitor.`
+                    winner: apiResult.winner_prediction,
+                    player1_score: apiResult.player1?.score || 0,
+                    player2_score: apiResult.player2?.score || 0,
+                    confidence: apiResult.confidence === 'STRONG' ? 90 : apiResult.confidence === 'MODERATE' ? 75 : 60,
+                    lucky_number: apiResult.universal_day || 1,
+                    description: apiResult.analysis_summary || 'Analysis complete.',
+                    remaining_tries: apiResult.remaining_tries,
+                    is_demo: apiResult.demo
                 };
                 
                 // Display results
