@@ -32,10 +32,10 @@ def get_client_ip(req: Request) -> str:
         return req.client.host
     return "unknown"
 
-def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, int]:
+def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, int, datetime]:
     """
     Check if client has exceeded demo rate limit using PostgreSQL
-    Returns: (allowed, current_count, remaining)
+    Returns: (allowed, current_count, remaining, reset_time)
     """
     now = datetime.utcnow()
     
@@ -44,10 +44,11 @@ def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, in
     
     if not usage:
         # Create new entry
+        reset_time = now + timedelta(days=1)
         usage = DemoUsage(
             client_ip=client_ip,
             count=0,
-            reset_time=now + timedelta(days=1)
+            reset_time=reset_time
         )
         db.add(usage)
         db.commit()
@@ -60,7 +61,7 @@ def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, in
     
     # Check limit (max 5 per day)
     if usage.count >= 5:
-        return False, usage.count, 0
+        return False, usage.count, 0, usage.reset_time
     
     # Increment count
     usage.count += 1
@@ -69,7 +70,7 @@ def check_demo_rate_limit_db(client_ip: str, db: Session) -> tuple[bool, int, in
     
     remaining = 5 - usage.count
     
-    return True, usage.count, remaining
+    return True, usage.count, remaining, usage.reset_time
 
 # Create app
 app = FastAPI(
@@ -401,19 +402,31 @@ def analyze_match_endpoint(
         )
 
 # Demo endpoint (no auth required, max 5 per IP per day)
-@app.post("/api/v1/demo-analyze", response_model=MatchAnalysisResponse)
+@app.post("/api/v1/demo-analyze")
 def demo_analyze(request: DemoRequest, req: Request, db: Session = Depends(get_db)):
     """Demo endpoint - max 5 uses per IP per day"""
     # Get client IP
     client_ip = get_client_ip(req)
     
     # Check rate limit using database
-    allowed, count, remaining = check_demo_rate_limit_db(client_ip, db)
+    allowed, count, remaining, reset_time = check_demo_rate_limit_db(client_ip, db)
     
     if not allowed:
+        # Calculate time until reset
+        now = datetime.utcnow()
+        time_until_reset = reset_time - now
+        hours = int(time_until_reset.total_seconds() // 3600)
+        minutes = int((time_until_reset.total_seconds() % 3600) // 60)
+        
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demo limit reached (5 per day). Sign up for unlimited access."
+            detail={
+                "message": "Demo limit reached (5 per day).",
+                "reset_in_hours": hours,
+                "reset_in_minutes": minutes,
+                "reset_time": reset_time.isoformat(),
+                "suggestion": "Sign up for unlimited access."
+            }
         )
     
     try:
@@ -437,6 +450,52 @@ def demo_analyze(request: DemoRequest, req: Request, db: Session = Depends(get_d
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Analysis failed: {str(e)}"
         )
+
+# Check demo rate limit status (no auth required)
+@app.get("/api/v1/demo-status")
+def demo_status(req: Request, db: Session = Depends(get_db)):
+    """Check current demo rate limit status for this IP"""
+    client_ip = get_client_ip(req)
+    
+    usage = db.query(DemoUsage).filter(DemoUsage.client_ip == client_ip).first()
+    now = datetime.utcnow()
+    
+    if not usage:
+        return {
+            "used": 0,
+            "remaining": 5,
+            "limit": 5,
+            "reset_time": (now + timedelta(days=1)).isoformat(),
+            "limited": False
+        }
+    
+    # Reset if day has passed
+    if now > usage.reset_time:
+        return {
+            "used": 0,
+            "remaining": 5,
+            "limit": 5,
+            "reset_time": (now + timedelta(days=1)).isoformat(),
+            "limited": False
+        }
+    
+    remaining = max(0, 5 - usage.count)
+    limited = usage.count >= 5
+    
+    # Calculate time until reset
+    time_until_reset = usage.reset_time - now
+    hours = int(time_until_reset.total_seconds() // 3600)
+    minutes = int((time_until_reset.total_seconds() % 3600) // 60)
+    
+    return {
+        "used": usage.count,
+        "remaining": remaining,
+        "limit": 5,
+        "reset_time": usage.reset_time.isoformat(),
+        "reset_in_hours": hours,
+        "reset_in_minutes": minutes,
+        "limited": limited
+    }
 
 # Static files and frontend
 # Handle both local dev and Docker container paths
