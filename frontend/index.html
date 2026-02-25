@@ -6,216 +6,195 @@
     <title>Sports Numerology API - Predict Match Outcomes</title>
     <!-- No CSS - style it yourself -->
 </head>
-<body class="bg-bg min-h-screen">
-    <!-- Navigation -->
-    <nav class="navbar py-4 border-b border-border">
-        <div class="container flex justify-between items-center">
-            <a href="index.html" class="logo text-xl font-bold">🔮 Sports Numerology</a>
-            <div class="nav-links flex items-center gap-6">
-                <a href="#demo" class="text-text-muted hover:text-text transition">Demo</a>
-                <a href="#features" class="text-text-muted hover:text-text transition">Features</a>
-                <a href="#pricing" class="text-text-muted hover:text-text transition">Pricing</a>
-                <a href="login.html" class="btn btn-secondary px-4 py-2">Sign In</a>
-                <a href="signup.html" class="btn btn-primary px-4 py-2">Get Started</a>
+<body>
+    <header>
+        <nav>
+            <a href="index.html">🔮 Sports Numerology</a>
+            <div>
+                <a href="#demo">Demo</a>
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+                <a href="login.html">Sign In</a>
+                <a href="signup.html">Get Started</a>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
-    <!-- Hero Section -->
-    <section class="py-20 px-4">
-        <div class="container text-center max-w-3xl mx-auto">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                Predict Sports Matches with <span class="text-primary-light">Numerology</span>
-            </h1>
-            <p class="text-text-muted text-lg mb-8 max-w-2xl mx-auto">
-                Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.
-            </p>
-            <div class="flex gap-4 justify-center mb-12">
-                <a href="#demo" class="btn btn-primary px-6 py-3 text-lg">Try It Free</a>
-                <a href="#features" class="btn btn-secondary px-6 py-3 text-lg">Learn More</a>
-            </div>
-            <div class="flex justify-center gap-12 text-center">
+    <main>
+        <section id="hero">
+            <article>
+                <h1>Predict Sports Matches with Numerology</h1>
+                <p>Scientific analysis of athlete birthdates vs match timing. Get data-driven predictions for tennis, boxing, MMA, and more.</p>
                 <div>
-                    <div class="text-3xl font-bold text-primary-light">10K+</div>
-                    <div class="text-text-muted text-sm">Analyses</div>
+                    <a href="#demo">Try It Free</a>
+                    <a href="#features">Learn More</a>
                 </div>
-                <div>
-                    <div class="text-3xl font-bold text-primary-light">500+</div>
-                    <div class="text-text-muted text-sm">API Users</div>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-primary-light">5</div>
-                    <div class="text-text-muted text-sm">Sports</div>
-                </div>
-            </div>
-        </div>
-    </section>
+                <aside>
+                    <figure>
+                        <figcaption>10K+ Analyses</figcaption>
+                    </figure>
+                    <figure>
+                        <figcaption>500+ API Users</figcaption>
+                    </figure>
+                    <figure>
+                        <figcaption>5 Sports</figcaption>
+                    </figure>
+                </aside>
+            </article>
+        </section>
 
-    <!-- Demo Section -->
-    <section class="py-16 px-4 bg-bg-light" id="demo">
-        <div class="container max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-2">Try the Demo</h2>
-            <p class="text-text-muted text-center mb-8">5 free analyses per day. No signup required.</p>
-            
-            <div class="glass-card p-6 md:p-8 rounded-lg">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Player 1 Name</label>
-                        <input type="text" id="player1" placeholder="e.g., Novak Djokovic" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Player 1 Birth Date</label>
-                        <input type="date" id="birth1" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Player 2 Name</label>
-                        <input type="text" id="player2" placeholder="e.g., Rafael Nadal" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Player 2 Birth Date</label>
-                        <input type="date" id="birth2" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Sport</label>
-                        <select id="sport" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
+        <section id="demo">
+            <article>
+                <header>
+                    <h2>Try the Demo</h2>
+                    <p>5 free analyses per day. No signup required.</p>
+                </header>
+                
+                <form id="demo-form" onsubmit="analyzeMatch(); return false;">
+                    <fieldset>
+                        <label>Player 1 Name</label>
+                        <input type="text" id="player1" placeholder="e.g., Novak Djokovic" required>
+                    </fieldset>
+                    <fieldset>
+                        <label>Player 1 Birth Date</label>
+                        <input type="date" id="birth1" required>
+                    </fieldset>
+                    <fieldset>
+                        <label>Player 2 Name</label>
+                        <input type="text" id="player2" placeholder="e.g., Rafael Nadal" required>
+                    </fieldset>
+                    <fieldset>
+                        <label>Player 2 Birth Date</label>
+                        <input type="date" id="birth2" required>
+                    </fieldset>
+                    <fieldset>
+                        <label>Sport</label>
+                        <select id="sport">
                             <option value="tennis">Tennis</option>
                             <option value="table-tennis">Table Tennis</option>
                             <option value="boxing">Boxing</option>
                             <option value="mma">MMA</option>
                         </select>
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-sm font-medium">Match Date</label>
-                        <input type="date" id="match-date" class="w-full px-4 py-3 bg-bg-lighter border border-border rounded-lg focus:border-primary focus:outline-none">
-                    </div>
+                    </fieldset>
+                    <fieldset>
+                        <label>Match Date</label>
+                        <input type="date" id="match-date" required>
+                    </fieldset>
+                    
+                    <button type="submit" id="analyze-btn">🔮 Analyze Match</button>
+                </form>
+                
+                <div id="loading" hidden>
+                    <p>Analyzing...</p>
                 </div>
                 
-                <button onclick="analyzeMatch()" id="analyze-btn" class="btn btn-primary w-full py-3 font-semibold mb-4">
-                    🔮 Analyze Match
-                </button>
-                
-                <div id="loading" class="hidden text-center py-4">
-                    <div class="inline-block w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <p class="text-text-muted mt-2">Analyzing...</p>
-                </div>
-                
-                <div id="results" class="hidden border-t border-border pt-6 mt-6">
-                    <div class="bg-primary/10 p-4 rounded-lg mb-4">
-                        <h3 class="text-xl font-bold text-primary-light">🏆 Winner: <span id="winner-name"></span></h3>
-                    </div>
-                    <p id="result-description" class="text-text-muted mb-4"></p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
-                            <div class="text-text-muted text-sm mb-1">Player 1</div>
-                            <div class="text-2xl font-bold" id="p1-score">-</div>
-                        </div>
-                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
-                            <div class="text-text-muted text-sm mb-1">Player 2</div>
-                            <div class="text-2xl font-bold" id="p2-score">-</div>
-                        </div>
-                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
-                            <div class="text-text-muted text-sm mb-1">Confidence</div>
-                            <div class="text-2xl font-bold text-primary-light" id="confidence">-</div>
-                        </div>
-                        <div class="bg-bg-lighter p-4 rounded-lg text-center">
-                            <div class="text-text-muted text-sm mb-1">Lucky #</div>
-                            <div class="text-2xl font-bold" id="lucky-number">-</div>
-                        </div>
-                    </div>
-                    <p id="demo-note" class="text-text-muted text-sm mt-4 text-center"></p>
-                </div>
-            </div>
-        </div>
-    </section>
+                <article id="results" hidden>
+                    <header>
+                        <h3>🏆 Winner: <span id="winner-name"></span></h3>
+                    </header>
+                    <p id="result-description"></p>
+                    <section>
+                        <figure>
+                            <figcaption>Player 1 Score</figcaption>
+                            <data id="p1-score">-</data>
+                        </figure>
+                        <figure>
+                            <figcaption>Player 2 Score</figcaption>
+                            <data id="p2-score">-</data>
+                        </figure>
+                        <figure>
+                            <figcaption>Confidence</figcaption>
+                            <data id="confidence">-</data>
+                        </figure>
+                        <figure>
+                            <figcaption>Lucky Number</figcaption>
+                            <data id="lucky-number">-</data>
+                        </figure>
+                    </section>
+                    <footer>
+                        <p id="demo-note"></p>
+                    </footer>
+                </article>
+            </article>
+        </section>
 
-    <!-- Features Section -->
-    <section class="py-16 px-4" id="features">
-        <div class="container max-w-5xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-card p-6 rounded-lg text-center">
-                    <div class="text-4xl mb-4">1️⃣</div>
-                    <h3 class="text-xl font-bold mb-2">Life Path Analysis</h3>
-                    <p class="text-text-muted">We calculate each athlete's Life Path number from their birth date to determine their core energy.</p>
-                </div>
-                <div class="glass-card p-6 rounded-lg text-center">
-                    <div class="text-4xl mb-4">2️⃣</div>
-                    <h3 class="text-xl font-bold mb-2">Universal Cycles</h3>
-                    <p class="text-text-muted">We analyze the Universal Year, Month, and Day of the match to find harmonious alignments.</p>
-                </div>
-                <div class="glass-card p-6 rounded-lg text-center">
-                    <div class="text-4xl mb-4">3️⃣</div>
-                    <h3 class="text-xl font-bold mb-2">Winning Prediction</h3>
-                    <p class="text-text-muted">The athlete with stronger numerological alignment to the match date has the advantage.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        <section id="features">
+            <header>
+                <h2>How It Works</h2>
+            </header>
+            <article>
+                <h3>1️⃣ Life Path Analysis</h3>
+                <p>We calculate each athlete's Life Path number from their birth date to determine their core energy.</p>
+            </article>
+            <article>
+                <h3>2️⃣ Universal Cycles</h3>
+                <p>We analyze the Universal Year, Month, and Day of the match to find harmonious alignments.</p>
+            </article>
+            <article>
+                <h3>3️⃣ Winning Prediction</h3>
+                <p>The athlete with stronger numerological alignment to the match date has the advantage.</p>
+            </article>
+        </section>
 
-    <!-- Pricing Section -->
-    <section class="py-16 px-4 bg-bg-light" id="pricing">
-        <div class="container max-w-4xl mx-auto">
-            <h2 class="text-3xl font-bold text-center mb-12">Pricing</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-card p-8 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2">Free</h3>
-                    <div class="text-3xl font-bold mb-4">$0</div>
-                    <ul class="space-y-2 text-text-muted mb-6">
-                        <li>✓ 5 analyses per day</li>
-                        <li>✓ Basic numerology report</li>
-                        <li>✓ Web interface access</li>
-                    </ul>
-                    <a href="#demo" class="btn btn-secondary w-full py-3 block text-center">Try Free</a>
-                </div>
-                <div class="glass-card p-8 rounded-lg border-2 border-primary">
-                    <h3 class="text-xl font-bold mb-2">Pro</h3>
-                    <div class="text-3xl font-bold mb-4">$19/mo</div>
-                    <ul class="space-y-2 text-text-muted mb-6">
-                        <li>✓ Unlimited analyses</li>
-                        <li>✓ API access</li>
-                        <li>✓ Detailed reports</li>
-                        <li>✓ Priority support</li>
-                    </ul>
-                    <a href="signup.html" class="btn btn-primary w-full py-3 block text-center">Get Started</a>
-                </div>
-            </div>
-        </div>
-    </section>
+        <section id="pricing">
+            <header>
+                <h2>Pricing</h2>
+            </header>
+            <article>
+                <header>
+                    <h3>Free</h3>
+                    <data value="0">$0</data>
+                </header>
+                <ul>
+                    <li>5 analyses per day</li>
+                    <li>Basic numerology report</li>
+                    <li>Web interface access</li>
+                </ul>
+                <footer>
+                    <a href="#demo">Try Free</a>
+                </footer>
+            </article>
+            <article>
+                <header>
+                    <h3>Pro</h3>
+                    <data value="19">$19/mo</data>
+                </header>
+                <ul>
+                    <li>Unlimited analyses</li>
+                    <li>API access</li>
+                    <li>Detailed reports</li>
+                    <li>Priority support</li>
+                </ul>
+                <footer>
+                    <a href="signup.html">Get Started</a>
+                </footer>
+            </article>
+        </section>
+    </main>
 
-    <!-- Footer -->
-    <footer class="py-8 px-4 border-t border-border">
-        <div class="container text-center text-text-muted">
-            <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
-        </div>
+    <footer>
+        <p>&copy; 2026 Sports Numerology API. All rights reserved.</p>
     </footer>
 
     <script>
-        const API_BASE_URL = '';
-
         async function analyzeMatch() {
             const btn = document.getElementById('analyze-btn');
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
             
-            const player1 = document.getElementById('player1').value.trim();
+            const player1 = document.getElementById('player1').value;
             const birth1 = document.getElementById('birth1').value;
-            const player2 = document.getElementById('player2').value.trim();
+            const player2 = document.getElementById('player2').value;
             const birth2 = document.getElementById('birth2').value;
             const sport = document.getElementById('sport').value;
             const matchDate = document.getElementById('match-date').value;
             
-            if (!player1 || !birth1 || !player2 || !birth2 || !matchDate) {
-                alert('Please fill in all fields');
-                return;
-            }
-            
             btn.disabled = true;
-            btn.classList.add('hidden');
-            loading.classList.remove('hidden');
-            results.classList.add('hidden');
+            loading.hidden = false;
+            results.hidden = true;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/demo-analyze`, {
+                const response = await fetch('/api/v1/demo-analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -233,10 +212,6 @@
                     return;
                 }
                 
-                if (!response.ok) {
-                    throw new Error('Analysis failed');
-                }
-                
                 const data = await response.json();
                 
                 document.getElementById('winner-name').textContent = data.winner_prediction;
@@ -246,19 +221,16 @@
                 document.getElementById('confidence').textContent = data.confidence;
                 document.getElementById('lucky-number').textContent = data.universal_day || '-';
                 
-                const note = document.getElementById('demo-note');
                 if (data.remaining_tries !== undefined) {
-                    note.textContent = `${data.remaining_tries} free tries remaining today`;
+                    document.getElementById('demo-note').textContent = `${data.remaining_tries} free tries remaining today`;
                 }
                 
-                results.classList.remove('hidden');
-                
+                results.hidden = false;
             } catch (error) {
                 alert('Error: ' + error.message);
             } finally {
                 btn.disabled = false;
-                btn.classList.remove('hidden');
-                loading.classList.add('hidden');
+                loading.hidden = true;
             }
         }
     </script>
