@@ -4,29 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Sports Numerology API</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="stylesheet" href="/static/utilities.css">
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/utilities.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <a href="index.html" class="logo">🔮 Sports Numerology</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="#" onclick="logout()">Logout</a>
+        <div class="container flex justify-between items-center">
+            <a href="index.html" class="logo">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-4">
+                <a href="index.html">Home</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
         </div>
     </nav>
 
     <!-- Dashboard Container -->
-    <div class="dashboard-container">
+    <div class="dashboard-container container">
         <!-- Header -->
-        <div class="dashboard-header">
-            <h1>Welcome back, <span id="user-name">User</span>!</h1>
-            <p>Manage your API keys and monitor your usage</p>
+        <div class="dashboard-header mb-6">
+            <h1 class="text-2xl font-bold mb-2">Welcome back, <span id="user-name">User</span>!</h1>
+            <p class="text-secondary">Manage your API keys and monitor your usage</p>
         </div>
 
         <!-- Dashboard Grid -->
-        <div class="dashboard-grid">
+        <div class="dashboard-grid grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Usage Stats Card -->
             <div class="glass-card dashboard-card">
                 <h3>📊 Usage Statistics</h3>
@@ -44,13 +46,13 @@
                         <div class="label">Total</div>
                     </div>
                 </div>
-                <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                        Plan: <span id="user-tier" style="color: var(--gold); font-weight: 600;">Free</span>
-                        <span id="usage-limit" style="float: right;">10 / 10 daily</span>
+                <div class="mt-6 pt-5 border-t">
+                    <p class="text-sm text-secondary flex justify-between">
+                        <span>Plan: <span id="user-tier" class="font-semibold" style="color: var(--gold);">Free</span></span>
+                        <span id="usage-limit">10 / 10 daily</span>
                     </p>
-                    <div style="margin-top: 10px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                        <div id="usage-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--purple-light)); transition: width 0.5s ease;"></div>
+                    <div class="mt-2 h-1.5 bg-bg-lighter rounded overflow-hidden">
+                        <div id="usage-bar" class="h-full transition-all duration-500" style="width: 0%; background: linear-gradient(90deg, var(--gold), var(--purple-light));"></div>
                     </div>
                 </div>
             </div>
@@ -73,26 +75,26 @@
             <!-- Quick Links Card -->
             <div class="glass-card dashboard-card">
                 <h3>📚 Resources</h3>
-                <div style="display: flex; flex-direction: column; gap: 15px;">
-                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
-                        <span style="font-size: 1.5rem; margin-right: 15px;">📖</span>
+                <div class="flex flex-col gap-4 mt-4">
+                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
+                        <span class="text-2xl mr-4">📖</span>
                         <div>
-                            <div style="font-weight: 600;">API Documentation</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">View endpoints & examples</div>
+                            <div class="font-semibold">API Documentation</div>
+                            <div class="text-sm text-secondary">View endpoints & examples</div>
                         </div>
                     </a>
-                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
-                        <span style="font-size: 1.5rem; margin-right: 15px;">💻</span>
+                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
+                        <span class="text-2xl mr-4">💻</span>
                         <div>
-                            <div style="font-weight: 600;">Code Examples</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Python, JavaScript, & more</div>
+                            <div class="font-semibold">Code Examples</div>
+                            <div class="text-sm text-secondary">Python, JavaScript, & more</div>
                         </div>
                     </a>
-                    <a href="#" class="resource-link" style="display: flex; align-items: center; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
-                        <span style="font-size: 1.5rem; margin-right: 15px;">🎾</span>
+                    <a href="#" class="resource-link flex items-center p-4 bg-bg rounded transition">
+                        <span class="text-2xl mr-4">🎾</span>
                         <div>
-                            <div style="font-weight: 600;">Try Demo</div>
-                            <div style="font-size: 0.85rem; color: var(--text-secondary);">Test the API without code</div>
+                            <div class="font-semibold">Try Demo</div>
+                            <div class="text-sm text-secondary">Test the API without code</div>
                         </div>
                     </a>
                 </div>
@@ -101,12 +103,12 @@
             <!-- Account Info Card -->
             <div class="glass-card dashboard-card">
                 <h3>👤 Account</h3>
-                <div style="margin-bottom: 20px;">
-                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Email</div>
-                    <div id="account-email" style="font-weight: 500;">-</div>
+                <div class="mb-4">
+                    <div class="text-sm text-secondary mb-1">Email</div>
+                    <div id="account-email" class="font-medium">-</div>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px;">Member Since</div>
+                <div class="mb-4">
+                    <div class="text-sm text-secondary mb-1">Member Since</div>
                     <div id="member-since">-</div>
                 </div>
                 <div>

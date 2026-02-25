@@ -56,7 +56,7 @@ def verify_token(token: str):
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-):
+) -> User:
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,7 +85,7 @@ async def get_current_user(
 async def get_api_key_user(
     x_api_key: str = Header(None, alias="X-API-Key"),
     db: Session = Depends(get_db)
-):
+) -> User:
     if not x_api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

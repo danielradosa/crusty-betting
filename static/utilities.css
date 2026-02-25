@@ -81,7 +81,7 @@
 .block { display: block; }
 .inline { display: inline; }
 .inline-block { display: inline-block; }
-.hidden { display: none; }
+.hidden { display: none !important; }
 .visible { visibility: visible; }
 .invisible { visibility: hidden; }
 
@@ -154,6 +154,17 @@
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .md\:block { display: none; }
+    .md\:grid-cols-2 { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 769px) {
+    .md\:block { display: block; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 /* Container utilities */
 .container-sm { max-width: 640px; margin-left: auto; margin-right: auto; }

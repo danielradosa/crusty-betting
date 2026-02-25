@@ -4,19 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sports Numerology API - Predict Match Outcomes</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="stylesheet" href="/static/utilities.css">
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/utilities.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo">🔮 Sports Numerology</div>
-        <div class="nav-links">
-            <a href="#demo">Demo</a>
-            <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <a href="login.html" class="btn btn-secondary">Sign In</a>
-            <a href="signup.html" class="btn btn-primary">Get Started</a>
+        <div class="container flex justify-between items-center">
+            <a href="index.html" class="logo">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-4">
+                <a href="#demo" class="hidden md:block">Demo</a>
+                <a href="#features" class="hidden md:block">Features</a>
+                <a href="#pricing" class="hidden md:block">Pricing</a>
+                <a href="login.html" class="btn btn-secondary">Sign In</a>
+                <a href="signup.html" class="btn btn-primary">Get Started</a>
+            </div>
         </div>
     </nav>
 
@@ -167,12 +169,12 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="demo-section" style="text-align: center;">
+    <section class="demo-section text-center">
         <h2 class="section-title">Ready to Predict?</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 30px; max-width: 500px; margin-left: auto; margin-right: auto;">
+        <p class="text-secondary mb-8 mx-auto" style="max-width: 500px;">
             Join thousands of sports analysts and betting professionals using our numerology API.
         </p>
-        <a href="signup.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 16px 40px;">
+        <a href="signup.html" class="btn btn-primary text-lg px-10 py-4">
             Create Free Account
         </a>
     </section>
@@ -186,6 +188,11 @@
     <div id="toast-container"></div>
 
     <script>
+        // API Configuration
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:8000' 
+            : '';
+
         // Set default match date to today
         document.getElementById('match-date').valueAsDate = new Date();
 
@@ -243,18 +250,18 @@
             
             try {
                 const data = {
-                    player1: player1,
-                    birth1: birth1,
-                    player2: player2,
-                    birth2: birth2,
+                    player1_name: player1,
+                    player1_birthdate: birth1,
+                    player2_name: player2,
+                    player2_birthdate: birth2,
                     match_date: matchDate,
                     sport: sport
                 };
                 
                 // Determine endpoint based on auth status
                 const endpoint = isLoggedIn() 
-                    ? '/api/v1/analyze-match' 
-                    : '/api/v1/demo-analyze';
+                    ? `${API_BASE_URL}/api/v1/analyze-match` 
+                    : `${API_BASE_URL}/api/v1/demo-analyze`;
                 
                 const headers = {
                     'Content-Type': 'application/json',

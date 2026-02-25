@@ -4,22 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - Sports Numerology API</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="stylesheet" href="/static/utilities.css">
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/utilities.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <a href="index.html" class="logo">🔮 Sports Numerology</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="signup.html" class="btn btn-primary">Sign Up</a>
+        <div class="container flex justify-between items-center">
+            <a href="index.html" class="logo">🔮 Sports Numerology</a>
+            <div class="nav-links flex items-center gap-4">
+                <a href="index.html">Home</a>
+                <a href="signup.html" class="btn btn-primary">Sign Up</a>
+            </div>
         </div>
     </nav>
 
     <!-- Auth Container -->
-    <div class="auth-container">
-        <div class="glass-card auth-card">
+    <div class="auth-container flex items-center justify-center min-h-screen">
+        <div class="glass-card auth-card w-full">
             <h2>Welcome Back</h2>
             <p class="auth-subtitle">Sign in to access your API keys and usage stats</p>
             
@@ -83,6 +85,11 @@
     <div id="toast-container"></div>
 
     <script>
+        // API Configuration
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:8000' 
+            : '';
+
         // Show toast notification
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -138,7 +145,7 @@
             
             try {
                 // API call to login endpoint
-                const response = await fetch('/auth/login', {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })

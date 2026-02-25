@@ -146,6 +146,10 @@ class MatchAnalysisResponse(BaseModel):
     recommendation: str
     bet_size: str
     analysis_summary: str
+    demo: Optional[bool] = None
+    note: Optional[str] = None
+    remaining_tries: Optional[int] = None
+    used_today: Optional[int] = None
 
 class DemoRequest(BaseModel):
     player1_name: str = Field(..., min_length=1, max_length=100)
