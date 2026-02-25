@@ -181,42 +181,56 @@ def health_check():
 # Authentication endpoints
 @app.post("/auth/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def signup(user_data: UserCreate, db: Session = Depends(get_db)):
-    # Check if user exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        # Check if user exists
+        existing_user = db.query(User).filter(User.email == user_data.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create user
+        hashed_password = get_password_hash(user_data.password)
+        new_user = User(
+            email=user_data.email,
+            password_hash=hashed_password
         )
-    
-    # Create user
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        email=user_data.email,
-        password_hash=hashed_password
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Create default API key
-    api_key = generate_api_key()
-    new_api_key = APIKey(
-        user_id=new_user.id,
-        api_key=api_key,
-        name="Default Key"
-    )
-    db.add(new_api_key)
-    db.commit()
-    
-    # Generate token
-    access_token = create_access_token(data={"sub": new_user.email})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": {
-            "id": new_user.id,
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Create default API key
+        api_key = generate_api_key()
+        new_api_key = APIKey(
+            user_id=new_user.id,
+            api_key=api_key,
+            name="Default Key"
+        )
+        db.add(new_api_key)
+        db.commit()
+        
+        # Generate token
+        access_token = create_access_token(data={"sub": new_user.email})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": new_user.id,
+                "email": new_user.email,
+                "created_at": new_user.created_at.isoformat()
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Signup error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
             "email": new_user.email,
             "created_at": new_user.created_at.isoformat()
         }

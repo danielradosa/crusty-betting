@@ -206,6 +206,14 @@
                     body: JSON.stringify({ email, password })
                 });
                 
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error('Server error. Please try again later.');
+                }
+                
                 const data = await response.json();
                 
                 if (!response.ok) {
@@ -224,6 +232,7 @@
                 }, 500);
                 
             } catch (error) {
+                console.error('Signup error:', error);
                 showError(error.message || 'Failed to create account. Please try again.');
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
