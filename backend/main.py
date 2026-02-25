@@ -231,10 +231,6 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Registration failed: {str(e)}"
         )
-            "email": new_user.email,
-            "created_at": new_user.created_at.isoformat()
-        }
-    }
 
 @app.post("/auth/login", response_model=TokenResponse)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
