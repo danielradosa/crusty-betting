@@ -1,140 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Sports Numerology API</title>
-    <!-- No CSS - style it yourself -->
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/utilities.css">
+    <link rel="stylesheet" href="../static/app.css">
 </head>
+
 <body>
     <header>
         <nav>
-            <a href="index.html">🔮 Sports Numerology</a>
+            <a href="index.html">🔮 SPORTOLOGY</a>
             <div>
                 <a href="index.html">Home</a>
-                <span id="user-email"></span>
-                <button onclick="logout()">Logout</button>
+                <span class="badge" id="user-email"></span>
+                <button class="cta-secondary" onclick="logout()">Logout</button>
             </div>
         </nav>
     </header>
 
-    <main>
-        <header>
-            <h1>Dashboard</h1>
-            <p>Manage your API keys and monitor usage</p>
-        </header>
+    <main class="page shell">
+        <section class="shell-header">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Manage your API keys and monitor usage.</p>
+            </div>
+            <span class="badge">Plan: Free · 10/day</span>
+        </section>
 
-        <section>
-            <article>
+        <section class="grid-2">
+            <article class="card">
                 <header>
-                    <h2>📊 Usage Statistics</h2>
+                    <div class="row">
+                        <h2>📊 Usage</h2>
+                    </div>
                 </header>
-                <section>
-                    <figure>
+
+                <section class="stats">
+                    <figure class="stat">
                         <figcaption>Today</figcaption>
                         <data id="today-requests">0</data>
                     </figure>
-                    <figure>
+                    <figure class="stat">
                         <figcaption>This Month</figcaption>
                         <data id="month-requests">0</data>
                     </figure>
-                    <figure>
+                    <figure class="stat">
                         <figcaption>Total</figcaption>
                         <data id="total-requests">0</data>
                     </figure>
                 </section>
-                <footer>
-                    <p>Plan: Free (10 / day)</p>
+
+                <div class="progress-wrap">
+                    <div class="row" style="justify-content: space-between;">
+                        <span class="muted">Daily limit</span>
+                        <span class="muted"><span id="usage-now">0</span> / 10</span>
+                    </div>
                     <progress id="usage-bar" value="0" max="10"></progress>
-                </footer>
+                </div>
             </article>
 
-            <article>
+            <article class="card">
                 <header>
-                    <h2>🔐 API Keys</h2>
-                    <button onclick="showCreateKeyModal()">+ Generate New Key</button>
+                    <div class="row">
+                        <h2>🔐 API Keys</h2>
+                        <button class="cta-primary" onclick="showCreateKeyModal()">+ New key</button>
+                    </div>
                 </header>
-                <p>Use these keys to authenticate your API requests. Keep them secret!</p>
-                <section id="api-keys-list">
-                    <!-- API keys loaded here -->
+
+                <p class="muted">Use these keys to authenticate requests. Keep them secret.</p>
+
+                <section id="api-keys-list" class="keylist" style="margin-top: 12px;">
+                    <!-- keys -->
                 </section>
             </article>
         </section>
 
-        <section>
+        <section class="card">
             <header>
-                <h2>📚 Resources</h2>
+                <div class="row">
+                    <h2>📚 Resources</h2>
+                </div>
             </header>
-            <article>
-                <a href="#">
+
+            <section class="resource-grid">
+                <a class="resource" href="#">
                     <h3>📖 API Documentation</h3>
-                    <p>View endpoints & examples</p>
+                    <p>Endpoints & examples</p>
                 </a>
-            </article>
-            <article>
-                <a href="#">
+                <a class="resource" href="#">
                     <h3>💻 Code Examples</h3>
-                    <p>Python, JavaScript, & more</p>
+                    <p>Python, JavaScript, and more</p>
                 </a>
-            </article>
-            <article>
-                <a href="index.html#demo">
+                <a class="resource" href="index.html#demo">
                     <h3>🎾 Try Demo</h3>
                     <p>Test the API without code</p>
                 </a>
-            </article>
+            </section>
         </section>
     </main>
 
     <dialog id="create-key-modal">
-        <article>
+        <article class="dialog-card">
             <header>
                 <h2>Generate New API Key</h2>
             </header>
-            <fieldset>
-                <label>Key Name (optional)</label>
-                <input type="text" id="key-name" placeholder="My App">
-            </fieldset>
+            <div class="dialog-body">
+                <div class="form-row">
+                    <label for="key-name">Key Name (optional)</label>
+                    <input type="text" id="key-name" placeholder="My App" />
+                </div>
+            </div>
             <footer>
-                <button onclick="closeCreateKeyModal()">Cancel</button>
-                <button onclick="generateApiKey()">Generate</button>
+                <button class="cta-secondary" onclick="closeCreateKeyModal()">Cancel</button>
+                <button class="cta-primary" onclick="generateApiKey()">Generate</button>
             </footer>
         </article>
     </dialog>
 
     <dialog id="show-key-modal">
-        <article>
+        <article class="dialog-card">
             <header>
                 <h2>Your New API Key</h2>
             </header>
-            <p>Copy this key now. You won't be able to see it again!</p>
-            <code id="new-api-key"></code>
+            <div class="dialog-body">
+                <p class="muted">Copy it now — you won’t be able to see it again.</p>
+                <code id="new-api-key" class="kcode"></code>
+            </div>
             <footer>
-                <button onclick="copyApiKey()">Copy</button>
-                <button onclick="closeShowKeyModal()">Done</button>
+                <button class="cta-secondary" onclick="copyApiKey()">Copy</button>
+                <button class="cta-primary" onclick="closeShowKeyModal()">Done</button>
             </footer>
         </article>
     </dialog>
 
     <script>
         const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = 'login.html';
-        }
+        if (!token) window.location.href = 'login.html';
 
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user.email) {
-            document.getElementById('user-email').textContent = user.email;
-        }
+        if (user.email) document.getElementById('user-email').textContent = user.email;
 
         async function loadApiKeys() {
             try {
                 const response = await fetch('/api-keys', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
                 if (!response.ok) throw new Error('Failed to load keys');
-                
+
                 const apiKeys = await response.json();
                 renderApiKeys(apiKeys);
                 updateUsageStats();
@@ -145,40 +161,49 @@
 
         function renderApiKeys(apiKeys) {
             const container = document.getElementById('api-keys-list');
-            
-            if (apiKeys.length === 0) {
-                container.innerHTML = '<p>No API keys yet. Generate one to get started.</p>';
+
+            if (!apiKeys || apiKeys.length === 0) {
+                container.innerHTML = '<p class="muted">No API keys yet. Generate one to get started.</p>';
                 return;
             }
-            
+
             container.innerHTML = apiKeys.map(key => `
-                <article>
-                    <h3>${key.name || 'Unnamed Key'}</h3>
-                    <code>${key.api_key}</code>
-                    <p>Created: ${new Date(key.created_at).toLocaleDateString()}</p>
-                    <button onclick="revokeKey('${key.id}')">Revoke</button>
-                </article>
-            `).join('');
+        <div class="keyrow">
+          <div class="keyrow-top">
+            <div>
+              <div class="keyname">${escapeHtml(key.name || 'Unnamed Key')}</div>
+              <div class="kmeta">Created: ${new Date(key.created_at).toLocaleDateString()}</div>
+            </div>
+            <button class="cta-secondary" onclick="revokeKey('${key.id}')">Revoke</button>
+          </div>
+          <code class="kcode">${escapeHtml(key.api_key)}</code>
+        </div>
+      `).join('');
         }
 
         function updateUsageStats() {
-            document.getElementById('today-requests').textContent = Math.floor(Math.random() * 5);
-            document.getElementById('month-requests').textContent = Math.floor(Math.random() * 50);
-            document.getElementById('total-requests').textContent = Math.floor(Math.random() * 200);
-            document.getElementById('usage-bar').value = 3;
+            const today = Math.floor(Math.random() * 5);
+            const month = Math.floor(Math.random() * 50);
+            const total = Math.floor(Math.random() * 200);
+
+            document.getElementById('today-requests').textContent = today;
+            document.getElementById('month-requests').textContent = month;
+            document.getElementById('total-requests').textContent = total;
+
+            document.getElementById('usage-now').textContent = today;
+            document.getElementById('usage-bar').value = Math.min(today, 10);
         }
 
         function showCreateKeyModal() {
             document.getElementById('create-key-modal').showModal();
         }
-
         function closeCreateKeyModal() {
             document.getElementById('create-key-modal').close();
         }
 
         async function generateApiKey() {
             const name = document.getElementById('key-name').value;
-            
+
             try {
                 const response = await fetch('/api-keys', {
                     method: 'POST',
@@ -188,15 +213,15 @@
                     },
                     body: JSON.stringify({ name: name || 'My App' })
                 });
-                
+
                 if (!response.ok) throw new Error('Failed to create key');
-                
+
                 const data = await response.json();
-                
+
                 closeCreateKeyModal();
                 document.getElementById('new-api-key').textContent = data.api_key;
                 document.getElementById('show-key-modal').showModal();
-                
+
                 loadApiKeys();
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -209,22 +234,18 @@
 
         function copyApiKey() {
             const key = document.getElementById('new-api-key').textContent;
-            navigator.clipboard.writeText(key).then(() => {
-                alert('Copied to clipboard!');
-            });
+            navigator.clipboard.writeText(key).then(() => alert('Copied to clipboard!'));
         }
 
         async function revokeKey(keyId) {
             if (!confirm('Are you sure? This action cannot be undone.')) return;
-            
+
             try {
                 const response = await fetch(`/api-keys/${keyId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
                 if (!response.ok) throw new Error('Failed to revoke key');
-                
                 loadApiKeys();
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -237,7 +258,14 @@
             window.location.href = 'index.html';
         }
 
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
         loadApiKeys();
     </script>
 </body>
+
 </html>

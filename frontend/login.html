@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign In - Sports Numerology API</title>
-    <!-- No CSS - style it yourself -->
+    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/utilities.css">
+    <link rel="stylesheet" href="../static/app.css">
 </head>
+
 <body>
     <header>
         <nav>
-            <a href="index.html">🔮 Sports Numerology</a>
+            <a href="index.html">🔮 SPORTOLOGY</a>
             <div>
                 <a href="index.html">Home</a>
                 <a href="signup.html">Sign Up</a>
@@ -17,63 +21,58 @@
         </nav>
     </header>
 
-    <main>
-        <article>
+    <main class="page auth">
+        <article class="auth-card">
             <header>
                 <h1>Welcome Back</h1>
-                <p>Sign in to access your API keys and usage stats</p>
+                <p>Sign in to access API keys & usage stats</p>
             </header>
-            
-            <div id="error-message" role="alert" hidden></div>
-            
-            <form id="login-form" onsubmit="handleLogin(event); return false;">
-                <fieldset>
-                    <label for="email">Email Address</label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="you@example.com"
-                        required
-                        autocomplete="email"
-                    >
-                </fieldset>
-                
-                <fieldset>
-                    <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="••••••••"
-                        required
-                        autocomplete="current-password"
-                    >
-                </fieldset>
-                
-                <button type="submit" id="login-btn">Sign In</button>
-            </form>
-            
+
+            <div class="auth-body">
+                <div id="error-message" class="alert" role="alert" hidden></div>
+
+                <form id="login-form" onsubmit="handleLogin(event); return false;">
+                    <div class="form-row">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="you@example.com" required
+                            autocomplete="email" />
+                    </div>
+
+                    <div class="form-row">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="••••••••" required
+                            autocomplete="current-password" />
+                    </div>
+
+                    <div class="auth-actions">
+                        <button type="submit" id="login-btn" class="cta-primary">Sign In</button>
+                        <a href="#" class="cta-secondary" onclick="showForgotPassword(); return false;">Forgot
+                            password?</a>
+                    </div>
+                </form>
+            </div>
+
             <footer>
                 <p>Don't have an account? <a href="signup.html">Sign up</a></p>
-                <p><a href="#" onclick="showForgotPassword(); return false;">Forgot password?</a></p>
             </footer>
         </article>
     </main>
 
     <dialog id="forgot-modal">
-        <article>
+        <article class="dialog-card">
             <header>
                 <h2>Reset Password</h2>
             </header>
-            <p>Enter your email address and we'll send you a link to reset your password.</p>
-            <fieldset>
-                <label>Email</label>
-                <input type="email" id="reset-email" placeholder="you@example.com">
-            </fieldset>
+            <div class="dialog-body">
+                <p class="muted">Enter your email and we’ll send a reset link.</p>
+                <div class="form-row">
+                    <label for="reset-email">Email</label>
+                    <input type="email" id="reset-email" placeholder="you@example.com" />
+                </div>
+            </div>
             <footer>
-                <button onclick="closeForgotModal()">Cancel</button>
-                <button onclick="sendResetLink()">Send Link</button>
+                <button class="cta-secondary" onclick="closeForgotModal()">Cancel</button>
+                <button class="cta-primary" onclick="sendResetLink()">Send Link</button>
             </footer>
         </article>
     </dialog>
@@ -82,35 +81,28 @@
         async function handleLogin(event) {
             event.preventDefault();
             document.getElementById('error-message').hidden = true;
-            
+
             const btn = document.getElementById('login-btn');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
-            if (!email || !password) {
-                showError('Please fill in all fields');
-                return;
-            }
-            
+
+            if (!email || !password) return showError('Please fill in all fields');
+
             btn.disabled = true;
             btn.textContent = 'Signing in...';
-            
+
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                
+
                 const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Login failed');
-                }
-                
+                if (!response.ok) throw new Error(data.detail || 'Login failed');
+
                 localStorage.setItem('token', data.access_token);
                 localStorage.setItem('user', JSON.stringify(data.user));
-                
                 window.location.href = 'dashboard.html';
             } catch (error) {
                 showError(error.message);
@@ -128,24 +120,18 @@
         function showForgotPassword() {
             document.getElementById('forgot-modal').showModal();
         }
-
         function closeForgotModal() {
             document.getElementById('forgot-modal').close();
         }
-
         async function sendResetLink() {
             const email = document.getElementById('reset-email').value;
-            if (!email) {
-                alert('Please enter your email');
-                return;
-            }
+            if (!email) return alert('Please enter your email');
             alert('Reset link sent to your email');
             closeForgotModal();
         }
 
-        if (localStorage.getItem('token')) {
-            window.location.href = 'dashboard.html';
-        }
+        if (localStorage.getItem('token')) window.location.href = 'dashboard.html';
     </script>
 </body>
+
 </html>
