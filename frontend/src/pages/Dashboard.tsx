@@ -28,6 +28,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   QuestionCircleOutlined,
+  CopyOutlined
 } from '@ant-design/icons'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useAuthStore } from '../hooks/useAuth'
@@ -123,7 +124,7 @@ function Dashboard() {
           message.error('Failed to delete API key')
           return
         }
-        setApiKeys((prev) => prev.filter((key) => key.id !== id))
+        setApiKeys((prev) => prev.filter((key) => String(key.id) !== String(id)))
         message.success('API key deleted')
       },
     })
@@ -132,14 +133,32 @@ function Dashboard() {
   const columns = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     {
-      title: 'API Key',
-      dataIndex: 'api_key',
-      key: 'api_key',
-      render: (key: string) => (
-        <Text code style={{ fontSize: 12 }}>
-          {key.substring(0, 20)}...
-        </Text>
-      ),
+      title: "API Key",
+      dataIndex: "api_key",
+      key: "api_key",
+      render: (apiKey: string) => {
+        const masked = `${apiKey.slice(0, 10)}...${apiKey.slice(-6)}`
+        return (
+          <Space size="small">
+            <Text code style={{ fontSize: 12 }}>{masked}</Text>
+            <Tooltip title="Copy API key">
+              <Button
+                size="small"
+                type="text"
+                icon={<CopyOutlined />}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(apiKey)
+                    message.success("API key copied")
+                  } catch {
+                    message.error("Failed to copy")
+                  }
+                }}
+              />
+            </Tooltip>
+          </Space>
+        )
+      },
     },
     {
       title: 'Status',

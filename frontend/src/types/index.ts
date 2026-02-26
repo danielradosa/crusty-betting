@@ -5,13 +5,13 @@ export interface User {
 }
 
 export interface ApiKey {
-  id: string
-  name: string
-  key: string
-  is_active: boolean
-  usage_count: number
+  id: number
+  name: string | null
+  api_key: string
   created_at: string
-  last_used_at: string | null
+  last_used: string | null
+  active: boolean
+  request_count: number
 }
 
 export interface MatchAnalysisRequest {
@@ -57,6 +57,6 @@ export interface RealTimeStats {
 
 export interface AuthResponse {
   access_token: string
-  refresh_token: string
   token_type: string
+  user: User
 }

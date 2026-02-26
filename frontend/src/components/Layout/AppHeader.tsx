@@ -5,6 +5,7 @@ import {
   HomeOutlined,
   LoginOutlined,
   LogoutOutlined,
+  DotChartOutlined
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
@@ -35,6 +36,11 @@ function AppHeader() {
             icon: <DashboardOutlined />,
             label: <Link to='/dashboard'>Dashboard</Link>,
           },
+          {
+            key: '/analyzer',
+            icon: <DotChartOutlined />,
+            label: <Link to='/analyzer'>Analyzer</Link>
+          }
         ]
       : []),
   ]
@@ -56,7 +62,7 @@ function AppHeader() {
             marginRight: 40,
           }}
         >
-          🔮 Crusty Betting
+          🔮 SPORTOLOGY
         </Text>
         <Menu
           theme='dark'

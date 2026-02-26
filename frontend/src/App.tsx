@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import Analyzer from './pages/Analyzer'
 import AppHeader from './components/Layout/AppHeader'
 import { AuthProvider } from './hooks/useAuth'
 
@@ -21,6 +22,7 @@ function App() {
               <Route path='/login' element={<Login />} />
               <Route path='/signup' element={<Signup />} />
               <Route path='/dashboard' element={<Dashboard />} />
+              <Route path='/analyzer' element={<Analyzer />} />
             </Routes>
           </Content>
           <Footer style={{ textAlign: 'center' }}>
