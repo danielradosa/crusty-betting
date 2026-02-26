@@ -5,9 +5,12 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from datetime import date, datetime, timedelta
+from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Optional
 import os
 from collections import defaultdict
+
+import json
 
 from database import create_tables, get_db, User, APIKey, DemoUsage, Player, UsageLog
 from auth import (
@@ -170,6 +173,101 @@ async def startup_event():
         print(f"Warning: Database initialization error: {e}")
         # Continue anyway - might be first deploy
 
+@app.websocket("/ws/stats")
+async def ws_stats(ws: WebSocket):
+    """
+    Connect: /ws/stats?token=<JWT>
+    Messages:
+      { "action": "get_stats" }
+    Replies:
+      { "type": "stats", "data": {...} }
+    """
+    await ws.accept()
+
+    token = ws.query_params.get("token")
+    if not token:
+        await ws.send_text(json.dumps({"type": "error", "message": "Missing token"}))
+        await ws.close(code=1008)
+        return
+
+    # manual DB session (Depends doesn't work the same in WS)
+    db: Session = next(get_db())
+
+    try:
+        # Use your existing token verifier (same as HTTP auth)
+        from auth import verify_token
+        email = verify_token(token)
+        if not email:
+            await ws.send_text(json.dumps({"type": "error", "message": "Invalid token"}))
+            await ws.close(code=1008)
+            return
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            await ws.send_text(json.dumps({"type": "error", "message": "User not found"}))
+            await ws.close(code=1008)
+            return
+
+        def build_stats():
+            now = datetime.utcnow()
+            today = now.date()
+            today_start = datetime.combine(today, datetime.min.time())
+            today_end = datetime.combine(today, datetime.max.time())
+
+            # Daily successful requests (same logic as rate limit)
+            daily_requests = db.query(UsageLog).filter(
+                UsageLog.user_id == user.id,
+                UsageLog.timestamp >= today_start,
+                UsageLog.timestamp <= today_end,
+                UsageLog.success == True
+            ).count()
+
+            total_requests = db.query(UsageLog).filter(
+                UsageLog.user_id == user.id,
+                UsageLog.success == True
+            ).count()
+
+            # Active users = users who made a request today
+            active_today = db.query(UsageLog.user_id).filter(
+                UsageLog.timestamp >= today_start,
+                UsageLog.timestamp <= today_end,
+                UsageLog.success == True
+            ).distinct().count()
+
+            return {
+                "timestamp": now.isoformat(),
+                "daily_requests": daily_requests,
+                "total_requests": total_requests,
+                "current_active_users": active_today,
+            }
+
+        # Send initial stats immediately
+        await ws.send_text(json.dumps({"type": "stats", "data": build_stats()}))
+
+        while True:
+            raw = await ws.receive_text()
+            try:
+                msg = json.loads(raw)
+            except Exception:
+                await ws.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
+                continue
+
+            if msg.get("action") == "get_stats":
+                await ws.send_text(json.dumps({"type": "stats", "data": build_stats()}))
+            else:
+                await ws.send_text(json.dumps({"type": "error", "message": "Unknown action"}))
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await ws.send_text(json.dumps({"type": "error", "message": f"Server error: {str(e)}"}))
+        await ws.close(code=1011)
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
 # Health check
 @app.get("/health")
 def health_check():
@@ -177,9 +275,9 @@ def health_check():
         "status": "healthy",
         "service": "sports-numerology-api",
         "version": "1.0.0",
-        "frontend_path": frontend_path,
+        "frontend_path": frontend_dist_path,
         "static_path": static_path,
-        "frontend_exists": os.path.exists(frontend_path),
+        "frontend_exists": os.path.exists(frontend_dist_path),
         "static_exists": os.path.exists(static_path)
     }
 
@@ -852,81 +950,79 @@ def seed_players(
     action = "Re-seeded" if force else "Seeded"
     return {"message": f"{action} {len(players)} players successfully", "count": len(players), "force": force}
 
-# Static files and frontend
-# Handle both local dev and Docker container paths
-base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-frontend_path = os.path.join(base_path, "frontend")
-static_path = os.path.join(base_path, "static")
+# ---------------- FRONTEND (Vite React SPA) ----------------
+# Base paths (work both locally and in Docker/Railway)
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Fallback for Railway deployment structure
-if not os.path.exists(frontend_path):
-    frontend_path = "/app/frontend"
+# Built React app output (Vite `npm run build`)
+frontend_dist_path = os.path.join(BASE_PATH, "frontend", "dist")
+static_path = os.path.join(BASE_PATH, "static")
+
+# Fallbacks for typical Docker/Railway layout
+if not os.path.exists(frontend_dist_path):
+    frontend_dist_path = "/app/frontend/dist"
+
 if not os.path.exists(static_path):
     static_path = "/app/static"
 
-# Mount static files
-if os.path.exists(static_path):
+# Mount backend static if present
+if os.path.isdir(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
     print(f"Static files mounted from: {static_path}")
 else:
-    print(f"Warning: Static path not found: {static_path}")
+    print(f"Warning: static path not found: {static_path}")
 
-def serve_html_no_cache(file_path: str):
-    """Serve HTML file with cache-busting headers"""
-    try:
-        with open(file_path, 'r') as f:
-            content = f.read()
-        return Response(
-            content=content,
-            media_type="text/html",
-            headers={
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0"
-            }
-        )
-    except Exception as e:
-        print(f"Error serving {file_path}: {e}")
-        return {"error": "Page not available", "path": file_path}
+# Mount Vite assets (/assets/*) so JS/CSS always work
+assets_path = os.path.join(frontend_dist_path, "assets")
+if os.path.isdir(assets_path):
+    app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+    print(f"Frontend assets mounted from: {assets_path}")
+else:
+    print(f"Warning: frontend assets path not found: {assets_path}")
 
-@app.get("/")
-def serve_landing():
-    return serve_html_no_cache(os.path.join(frontend_path, "index.html"))
+def _spa_index() -> FileResponse:
+    index_path = os.path.join(frontend_dist_path, "index.html")
+    if not os.path.exists(index_path):
+        raise HTTPException(status_code=404, detail="Frontend not built (index.html missing)")
+    return FileResponse(index_path)
 
-@app.get("/dashboard")
-def serve_dashboard():
-    return serve_html_no_cache(os.path.join(frontend_path, "dashboard.html"))
+# Serve SPA entry on /
+@app.get("/", include_in_schema=False)
+def serve_frontend_root():
+    return _spa_index()
 
-@app.get("/login")
-def serve_login():
-    return serve_html_no_cache(os.path.join(frontend_path, "login.html"))
+# SPA history fallback for client-side routes (/login, /signup, /dashboard, ...)
+# IMPORTANT: this must be AFTER your API routes in the file (it is).
+@app.get("/{path:path}", include_in_schema=False)
+def serve_frontend_spa(path: str):
+    # Let API/static routes behave normally
+    if path.startswith((
+        "api/",
+        "auth/",
+        "assets/",
+        "static/",
+        "admin/",
+        "health",
+        "openapi.json",
+    )):
+        raise HTTPException(status_code=404, detail="Not Found")
 
-@app.get("/signup")
-def serve_signup():
-    return serve_html_no_cache(os.path.join(frontend_path, "signup.html"))
+    # Optional: if someone requests a file that doesn't exist, still return SPA
+    return _spa_index()
 
-# Also serve .html versions for direct links
-@app.get("/login.html")
-def serve_login_html():
-    return serve_login()
-
-@app.get("/signup.html")
-def serve_signup_html():
-    return serve_signup()
-
-@app.get("/dashboard.html")
-def serve_dashboard_html():
-    return serve_dashboard()
-
-@app.get("/index.html")
-def serve_index_html():
-    return serve_landing()
-
-@app.get("/docs")
+# Optional: docs route, try to serve docs.html from the built frontend or static
+@app.get("/docs", include_in_schema=False)
 def serve_docs():
-    return FileResponse(os.path.join(frontend_path, "docs.html"))
+    candidate_paths = [
+        os.path.join(frontend_dist_path, "docs.html"),
+        os.path.join(static_path, "docs.html"),
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p):
+            return FileResponse(p)
+    raise HTTPException(status_code=404, detail="Docs page not found")
 
-# Railway provides PORT env var, fallback to 8000
+# Railway provides PORT env var, fallback to 8000 for local runs
 port = int(os.getenv("PORT", 8000))
 
 if __name__ == "__main__":

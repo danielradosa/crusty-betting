@@ -1,0 +1,24 @@
+# frontend
+/node_modules
+dist/
+build/
+.vite/
+.env
+.env.local
+.env.*.local
+
+# backend
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+.venv/
+venv/
+
+# junk
+.DS_Store
+.vscode/
+.idea/
