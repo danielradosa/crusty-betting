@@ -36,7 +36,7 @@ function Home() {
     return (
         <div>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                <Title>🔮 Sports Numerology API</Title>
+                <Title>🔮 SPORTOLOGY + API</Title>
                 <Paragraph style={{ fontSize: 18, maxWidth: 640, margin: '0 auto' }}>
                     Analyze sports matches using numerology and get betting-oriented insights
                     with confidence scores and recommendations.

@@ -15,7 +15,7 @@ import {
     Typography,
 } from 'antd'
 import AnalysisOutlined from '@ant-design/icons'
-import { MatchAnalysisRequest, MatchAnalysisResponse } from '../../types'
+import { MatchAnalysisRequest, DemoMatchAnalysisResponse } from '../../types'
 import dayjs from 'dayjs'
 
 const { Option } = Select
@@ -23,17 +23,15 @@ const { Title, Text } = Typography
 
 const sports = [
     { value: 'tennis', label: '🎾 Tennis' },
-    { value: 'table_tennis', label: '🏓 Table Tennis' },
+    { value: 'table-tennis', label: '🏓 Table Tennis' },
     { value: 'boxing', label: '🥊 Boxing' },
     { value: 'mma', label: '🥋 MMA' },
-    { value: 'basketball', label: '🏀 Basketball' },
-    { value: 'football', label: '⚽ Football' },
 ]
 
 function DemoAnalyzer() {
     const [form] = Form.useForm()
     const [loading, setLoading] = useState(false)
-    const [result, setResult] = useState<MatchAnalysisResponse | null>(null)
+    const [result, setResult] = useState<DemoMatchAnalysisResponse | null>(null)
     const [error, setError] = useState<string | null>(null)
 
     const onFinish = async (values: any) => {
@@ -58,10 +56,36 @@ function DemoAnalyzer() {
             })
 
             if (!response.ok) {
-                throw new Error('Analysis failed')
+                let payload: any = null
+                try {
+                    payload = await response.json()
+                } catch { }
+
+                const detail = payload?.detail
+
+                if (response.status === 429) {
+                    const msg =
+                        typeof detail === "string"
+                            ? detail
+                            : detail?.message || "Demo limit reached."
+
+                    const resetInfo =
+                        detail?.reset_time
+                            ? ` Resets at: ${new Date(detail.reset_time).toLocaleString()}.`
+                            : ""
+
+                    throw new Error(msg + resetInfo)
+                }
+
+                const msg =
+                    typeof detail === "string"
+                        ? detail
+                        : payload?.message || "Analysis failed"
+
+                throw new Error(msg)
             }
 
-            const data: MatchAnalysisResponse = await response.json()
+            const data: DemoMatchAnalysisResponse = await response.json()
             setResult(data)
         } catch (err: any) {
             setError(err.message || 'An error occurred during analysis')
@@ -212,6 +236,15 @@ function DemoAnalyzer() {
                         <Descriptions.Item label='Bet Size'>{result.bet_size}</Descriptions.Item>
                     </Descriptions>
                 </>
+            )}
+
+            {result?.note && (
+                <Alert
+                    style={{ marginTop: 12 }}
+                    type="warning"
+                    showIcon
+                    message={result.note}
+                />
             )}
         </Card>
     )

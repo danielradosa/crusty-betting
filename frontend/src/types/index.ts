@@ -48,6 +48,13 @@ export interface MatchAnalysisResponse {
   analysis_summary: string
 }
 
+export interface DemoMatchAnalysisResponse extends MatchAnalysisResponse {
+  demo?: boolean
+  note?: string
+  remaining_tries?: number
+  used_today?: number
+}
+
 export interface RealTimeStats {
   timestamp: string
   daily_requests: number
