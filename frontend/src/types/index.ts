@@ -1,0 +1,62 @@
+export interface User {
+  id: string
+  email: string
+  created_at: string
+}
+
+export interface ApiKey {
+  id: string
+  name: string
+  key: string
+  is_active: boolean
+  usage_count: number
+  created_at: string
+  last_used_at: string | null
+}
+
+export interface MatchAnalysisRequest {
+  player1_name: string
+  player1_birthdate: string
+  player2_name: string
+  player2_birthdate: string
+  match_date: string
+  sport: 'tennis' | 'table_tennis' | 'boxing' | 'mma'
+}
+
+export interface PlayerAnalysis {
+  name: string
+  life_path: number
+  expression: number
+  personal_year: number
+  score: number
+  reasons: string[]
+}
+
+export interface MatchAnalysisResponse {
+  match_date: string
+  sport: string
+  universal_year: number
+  universal_month: number
+  universal_day: number
+  player1: PlayerAnalysis
+  player2: PlayerAnalysis
+  winner_prediction: string
+  confidence: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH'
+  score_difference: number
+  recommendation: string
+  bet_size: string
+  analysis_summary: string
+}
+
+export interface RealTimeStats {
+  timestamp: string
+  daily_requests: number
+  total_requests: number
+  current_active_users: number
+}
+
+export interface AuthResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
+}
