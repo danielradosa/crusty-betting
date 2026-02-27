@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Analyzer from './pages/Analyzer'
+import Bot from './pages/Bot'
 import AppHeader from './components/Layout/AppHeader'
 import { AuthProvider } from './hooks/useAuth'
 
@@ -23,10 +24,11 @@ function App() {
               <Route path='/signup' element={<Signup />} />
               <Route path='/dashboard' element={<Dashboard />} />
               <Route path='/analyzer' element={<Analyzer />} />
+              <Route path='/bot' element={<Bot />} />
             </Routes>
           </Content>
           <Footer style={{ textAlign: 'center' }}>
-            Crusty Betting ©{new Date().getFullYear()} - Sports Numerology API
+            2026 ©{new Date().getFullYear()} - SPORTOLOGY + API
           </Footer>
         </Layout>
       </Router>

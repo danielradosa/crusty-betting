@@ -1,16 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, Response
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from fastapi import FastAPI, Depends, HTTPException, status, Request # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from fastapi.staticfiles import StaticFiles # type: ignore
+from fastapi.responses import FileResponse, JSONResponse, Response # type: ignore
+from pydantic import BaseModel, EmailStr, Field # type: ignore
+from sqlalchemy.orm import Session # type: ignore
+from sqlalchemy import or_ # type: ignore
 from datetime import date, datetime, timedelta
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket, WebSocketDisconnect # type: ignore
 from typing import List, Optional
 import os
 from collections import defaultdict
-from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.postgresql import insert as pg_insert # type: ignore
 import unicodedata, re
 
 import json

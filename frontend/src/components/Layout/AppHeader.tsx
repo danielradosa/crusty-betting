@@ -5,7 +5,8 @@ import {
   HomeOutlined,
   LoginOutlined,
   LogoutOutlined,
-  DotChartOutlined
+  DotChartOutlined,
+  RobotOutlined
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
@@ -40,6 +41,11 @@ function AppHeader() {
             key: '/analyzer',
             icon: <DotChartOutlined />,
             label: <Link to='/analyzer'>Analyzer</Link>
+          },
+          {
+            key: '/bot',
+            icon: <RobotOutlined />,
+            label: <Link to='/bot'></Link>
           }
         ]
       : []),
