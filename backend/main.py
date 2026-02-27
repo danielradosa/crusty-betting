@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.orm import Session, or_
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from datetime import date, datetime, timedelta
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Optional
