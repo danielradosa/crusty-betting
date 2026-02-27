@@ -1,8 +1,21 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
-    Card, Form, Input, Button, DatePicker, Select,
-    Space, Typography, message, Spin, Alert, Col, Row, Divider,
-    Statistic
+    Card,
+    Form,
+    Input,
+    Button,
+    DatePicker,
+    Select,
+    Space,
+    Typography,
+    message,
+    Spin,
+    Alert,
+    Col,
+    Row,
+    Divider,
+    Statistic,
+    AutoComplete,
 } from "antd"
 import { InfoCircleOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
@@ -10,6 +23,14 @@ import { useAuthStore } from "../hooks/useAuth"
 import type { ApiKey } from "../types"
 
 const { Title, Text } = Typography
+
+type PlayerSuggestion = {
+    id: number
+    name: string
+    birthdate: string // YYYY-MM-DD
+    sport: string
+    country?: string | null
+}
 
 type AnalyzeFormValues = {
     apiKey: string
@@ -20,6 +41,13 @@ type AnalyzeFormValues = {
     player2_birthdate: any
     match_date: any
 }
+
+const sportOptions = [
+    { value: "tennis", label: "Tennis" },
+    { value: "table-tennis", label: "Table Tennis" },
+    { value: "boxing", label: "Boxing" },
+    { value: "mma", label: "MMA" },
+]
 
 export default function Analyzer() {
     const [form] = Form.useForm<AnalyzeFormValues>()
@@ -34,6 +62,21 @@ export default function Analyzer() {
 
     const activeKeys = useMemo(() => keys.filter((k) => k.active), [keys])
 
+    // --- Player search/autocomplete ---
+    const [p1Options, setP1Options] = useState<any[]>([])
+    const [p2Options, setP2Options] = useState<any[]>([])
+    const p1Timer = useRef<number | null>(null)
+    const p2Timer = useRef<number | null>(null)
+
+    // --- Birthdate lock state ---
+    const [p1BirthLocked, setP1BirthLocked] = useState(false)
+    const [p2BirthLocked, setP2BirthLocked] = useState(false)
+
+    // Track "selected" name so we can unlock if user edits it
+    const p1SelectedNameRef = useRef<string>("")
+    const p2SelectedNameRef = useRef<string>("")
+
+    // Load API keys (JWT protected)
     useEffect(() => {
         const loadKeys = async () => {
             setKeysLoading(true)
@@ -43,14 +86,18 @@ export default function Analyzer() {
                 const res = await fetch("/api-keys", {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 })
-                if (!res.ok) throw new Error(await res.text())
-                const data = await res.json()
+
+                if (!res.ok) {
+                    const text = await res.text().catch(() => "")
+                    throw new Error(text || "Failed to load API keys")
+                }
+
+                const data: ApiKey[] = await res.json()
                 setKeys(data)
 
-                // auto-pick first active key
-                const firstActive = data.find((k: ApiKey) => k.active)
+                const firstActive = data.find((k) => k.active)
                 if (firstActive) form.setFieldsValue({ apiKey: firstActive.api_key })
-            } catch (e: any) {
+            } catch {
                 message.error("Failed to load API keys")
             } finally {
                 setKeysLoading(false)
@@ -59,6 +106,101 @@ export default function Analyzer() {
 
         loadKeys()
     }, [accessToken, form])
+
+    const searchPlayers = async (q: string, sport: string): Promise<PlayerSuggestion[]> => {
+        if (!q?.trim()) return []
+        const url = `/api/v1/players?q=${encodeURIComponent(q)}&sport=${encodeURIComponent(sport || "")}`
+        const res = await fetch(url)
+        if (!res.ok) return []
+        return res.json()
+    }
+
+    const makeAutocompleteOptions = (players: PlayerSuggestion[]) =>
+        players.map((p) => ({
+            value: p.name,
+            label: (
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                    <span>{p.name}</span>
+                    <span style={{ opacity: 0.65, fontSize: 12 }}>
+                        {p.birthdate}
+                        {p.country ? ` • ${p.country}` : ""}
+                    </span>
+                </div>
+            ),
+            player: p,
+        }))
+
+    const onSearchP1 = (text: string) => {
+        const sport = form.getFieldValue("sport") || "tennis"
+        if (p1Timer.current) window.clearTimeout(p1Timer.current)
+        p1Timer.current = window.setTimeout(async () => {
+            const players = await searchPlayers(text, sport)
+            setP1Options(makeAutocompleteOptions(players))
+        }, 250)
+    }
+
+    const onSearchP2 = (text: string) => {
+        const sport = form.getFieldValue("sport") || "tennis"
+        if (p2Timer.current) window.clearTimeout(p2Timer.current)
+        p2Timer.current = window.setTimeout(async () => {
+            const players = await searchPlayers(text, sport)
+            setP2Options(makeAutocompleteOptions(players))
+        }, 250)
+    }
+
+    const onSelectP1 = (_value: string, option: any) => {
+        const p: PlayerSuggestion | undefined = option?.player
+        if (p?.birthdate) {
+            form.setFieldsValue({ player1_birthdate: dayjs(p.birthdate, "YYYY-MM-DD") })
+            setP1BirthLocked(true)
+            p1SelectedNameRef.current = p.name
+        }
+    }
+
+    const onSelectP2 = (_value: string, option: any) => {
+        const p: PlayerSuggestion | undefined = option?.player
+        if (p?.birthdate) {
+            form.setFieldsValue({ player2_birthdate: dayjs(p.birthdate, "YYYY-MM-DD") })
+            setP2BirthLocked(true)
+            p2SelectedNameRef.current = p.name
+        }
+    }
+
+    // If user edits name away from selected -> unlock + clear birthdate (avoid wrong birthdate)
+    const handlePlayer1NameChange = (val: string) => {
+        if (p1BirthLocked && val !== p1SelectedNameRef.current) {
+            setP1BirthLocked(false)
+            p1SelectedNameRef.current = ""
+            form.setFieldsValue({ player1_birthdate: null })
+        }
+    }
+
+    const handlePlayer2NameChange = (val: string) => {
+        if (p2BirthLocked && val !== p2SelectedNameRef.current) {
+            setP2BirthLocked(false)
+            p2SelectedNameRef.current = ""
+            form.setFieldsValue({ player2_birthdate: null })
+        }
+    }
+
+    const onSportChange = () => {
+        setP1Options([])
+        setP2Options([])
+
+        // sport change invalidates player selection (since DB is sport scoped)
+        setP1BirthLocked(false)
+        setP2BirthLocked(false)
+        p1SelectedNameRef.current = ""
+        p2SelectedNameRef.current = ""
+
+        // optional: clear player fields too for safety
+        form.setFieldsValue({
+            player1_name: "",
+            player1_birthdate: null,
+            player2_name: "",
+            player2_birthdate: null,
+        })
+    }
 
     const onFinish = async (values: AnalyzeFormValues) => {
         setLoading(true)
@@ -94,7 +236,7 @@ export default function Analyzer() {
 
             const data = await res.json()
             setResult(data)
-            message.success("Analysis complete")
+            message.success("Analysis complete ✅")
         } catch (e: any) {
             setError(e?.message || "Something went wrong")
         } finally {
@@ -138,36 +280,73 @@ export default function Analyzer() {
                         </Form.Item>
 
                         <Form.Item label="Sport" name="sport" rules={[{ required: true }]}>
-                            <Select
-                                options={[
-                                    { value: "tennis", label: "Tennis" },
-                                    { value: "table-tennis", label: "Table Tennis" },
-                                    { value: "boxing", label: "Boxing" },
-                                    { value: "mma", label: "MMA" },
-                                ]}
-                            />
+                            <Select options={sportOptions} onChange={onSportChange} />
                         </Form.Item>
 
-                        <Space style={{ width: "100%" }} size="large" align="start">
-                            <Form.Item label="Player 1 Name" name="player1_name" rules={[{ required: true }]}>
-                                <Input placeholder="e.g. Novak Djokovic" />
-                            </Form.Item>
-                            <Form.Item label="Player 1 Birthdate" name="player1_birthdate" rules={[{ required: true }]}>
-                                <DatePicker />
-                            </Form.Item>
-                        </Space>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item label="Player 1 Name" name="player1_name" rules={[{ required: true }]}>
+                                    <AutoComplete
+                                        options={p1Options}
+                                        onSearch={onSearchP1}
+                                        onSelect={onSelectP1}
+                                        onChange={handlePlayer1NameChange}
+                                        placeholder="Type to search (e.g. Novak Djokovic)"
+                                        filterOption={false}
+                                    >
+                                        <Input />
+                                    </AutoComplete>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label={
+                                        <Space>
+                                            Player 1 Birthdate
+                                            {p1BirthLocked && <Text type="secondary">(auto-filled)</Text>}
+                                        </Space>
+                                    }
+                                    name="player1_birthdate"
+                                    rules={[{ required: true }]}
+                                >
+                                    <DatePicker style={{ width: "100%" }} disabled={p1BirthLocked} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                        <Space style={{ width: "100%" }} size="large" align="start">
-                            <Form.Item label="Player 2 Name" name="player2_name" rules={[{ required: true }]}>
-                                <Input placeholder="e.g. Rafael Nadal" />
-                            </Form.Item>
-                            <Form.Item label="Player 2 Birthdate" name="player2_birthdate" rules={[{ required: true }]}>
-                                <DatePicker />
-                            </Form.Item>
-                        </Space>
+                        <Row gutter={16}>
+                            <Col xs={24} md={12}>
+                                <Form.Item label="Player 2 Name" name="player2_name" rules={[{ required: true }]}>
+                                    <AutoComplete
+                                        options={p2Options}
+                                        onSearch={onSearchP2}
+                                        onSelect={onSelectP2}
+                                        onChange={handlePlayer2NameChange}
+                                        placeholder="Type to search (e.g. Rafael Nadal)"
+                                        filterOption={false}
+                                    >
+                                        <Input />
+                                    </AutoComplete>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} md={12}>
+                                <Form.Item
+                                    label={
+                                        <Space>
+                                            Player 2 Birthdate
+                                            {p2BirthLocked && <Text type="secondary">(auto-filled)</Text>}
+                                        </Space>
+                                    }
+                                    name="player2_birthdate"
+                                    rules={[{ required: true }]}
+                                >
+                                    <DatePicker style={{ width: "100%" }} disabled={p2BirthLocked} />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
                         <Form.Item label="Match Date" name="match_date" rules={[{ required: true }]}>
-                            <DatePicker />
+                            <DatePicker style={{ width: "100%" }} />
                         </Form.Item>
 
                         {error && (
@@ -187,81 +366,45 @@ export default function Analyzer() {
                         🏆 Prediction Result
                     </Title>
 
-                    {/* Winner + Confidence */}
                     <Row gutter={16} style={{ marginBottom: 16 }}>
                         <Col xs={24} md={8}>
                             <Card bordered>
-                                <Statistic
-                                    title="Predicted Winner"
-                                    value={result.winner_prediction}
-                                    valueStyle={{ color: "#1890ff" }}
-                                />
+                                <Statistic title="Predicted Winner" value={result.winner_prediction} />
                             </Card>
                         </Col>
 
                         <Col xs={24} md={8}>
                             <Card bordered>
-                                <Statistic
-                                    title="Confidence"
-                                    value={result.confidence.replace("_", " ")}
-                                    valueStyle={{
-                                        color:
-                                            result.confidence === "VERY_HIGH"
-                                                ? "#3f8600"
-                                                : result.confidence === "HIGH"
-                                                    ? "#52c41a"
-                                                    : result.confidence === "MODERATE"
-                                                        ? "#faad14"
-                                                        : "#cf1322",
-                                    }}
-                                />
+                                <Statistic title="Confidence" value={String(result.confidence || "").replace("_", " ")} />
                             </Card>
                         </Col>
 
                         <Col xs={24} md={8}>
                             <Card bordered>
-                                <Statistic
-                                    title="Score Difference"
-                                    value={result.score_difference}
-                                    prefix="Δ"
-                                />
+                                <Statistic title="Score Difference" value={result.score_difference} prefix="Δ" />
                             </Card>
                         </Col>
                     </Row>
 
-                    <Card
-                        style={{ marginBottom: 16 }}
-                        type="inner"
-                    >
+                    <Card style={{ marginBottom: 16 }} type="inner">
                         <Space align="start">
-                            <InfoCircleOutlined style={{ color: "#1890ff", marginTop: 4 }} />
+                            <InfoCircleOutlined style={{ marginTop: 4 }} />
                             <Text>
-                                <strong>How scoring works:</strong> Higher total score = higher
-                                probability of winning according to numerological alignment
-                                for the selected match date.
+                                <strong>How scoring works:</strong> Higher total score = more likely to win
+                                (according to numerological alignment for the selected match date).
                             </Text>
                         </Space>
                     </Card>
 
-                    {/* Player Comparison */}
                     <Row gutter={16} style={{ marginBottom: 16 }}>
                         <Col xs={24} md={12}>
-                            <Card
-                                title={`👤 ${result.player1.name}`}
-                                bordered
-                                style={{
-                                    borderColor:
-                                        result.winner_prediction === result.player1.name
-                                            ? "#52c41a"
-                                            : undefined,
-                                }}
-                            >
-                                <p><strong>Life Path:</strong> {result.player1.life_path}</p>
-                                <p><strong>Expression:</strong> {result.player1.expression}</p>
-                                <p><strong>Personal Year:</strong> {result.player1.personal_year}</p>
-                                <p><strong>Total Score:</strong> {result.player1.score}</p>
+                            <Card title={`👤 ${result.player1?.name || "Player 1"}`} bordered>
+                                <p><strong>Life Path:</strong> {result.player1?.life_path}</p>
+                                <p><strong>Expression:</strong> {result.player1?.expression}</p>
+                                <p><strong>Personal Year:</strong> {result.player1?.personal_year}</p>
+                                <p><strong>Total Score:</strong> {result.player1?.score}</p>
 
-                                {result.player1.reasons?.length > 0 && (
+                                {result.player1?.reasons?.length > 0 && (
                                     <>
                                         <Divider />
                                         <ul style={{ paddingLeft: 16 }}>
@@ -275,22 +418,13 @@ export default function Analyzer() {
                         </Col>
 
                         <Col xs={24} md={12}>
-                            <Card
-                                title={`👤 ${result.player2.name}`}
-                                bordered
-                                style={{
-                                    borderColor:
-                                        result.winner_prediction === result.player2.name
-                                            ? "#52c41a"
-                                            : undefined,
-                                }}
-                            >
-                                <p><strong>Life Path:</strong> {result.player2.life_path}</p>
-                                <p><strong>Expression:</strong> {result.player2.expression}</p>
-                                <p><strong>Personal Year:</strong> {result.player2.personal_year}</p>
-                                <p><strong>Total Score:</strong> {result.player2.score}</p>
+                            <Card title={`👤 ${result.player2?.name || "Player 2"}`} bordered>
+                                <p><strong>Life Path:</strong> {result.player2?.life_path}</p>
+                                <p><strong>Expression:</strong> {result.player2?.expression}</p>
+                                <p><strong>Personal Year:</strong> {result.player2?.personal_year}</p>
+                                <p><strong>Total Score:</strong> {result.player2?.score}</p>
 
-                                {result.player2.reasons?.length > 0 && (
+                                {result.player2?.reasons?.length > 0 && (
                                     <>
                                         <Divider />
                                         <ul style={{ paddingLeft: 16 }}>
@@ -304,22 +438,13 @@ export default function Analyzer() {
                         </Col>
                     </Row>
 
-                    {/* Betting Recommendation */}
-                    <Card
-                        style={{ marginBottom: 16 }}
-                        bordered
-                        type="inner"
-                        title="💰 Betting Recommendation"
-                    >
+                    <Card style={{ marginBottom: 16 }} bordered type="inner" title="💰 Betting Recommendation">
                         <p><strong>Suggested Bet Size:</strong> {result.bet_size}</p>
                         <p><strong>Recommendation:</strong> {result.recommendation}</p>
                     </Card>
 
-                    {/* Summary */}
                     <Card type="inner" title="📝 Analysis Summary">
-                        <Text style={{ whiteSpace: "pre-line" }}>
-                            {result.analysis_summary}
-                        </Text>
+                        <Text style={{ whiteSpace: "pre-line" }}>{result.analysis_summary}</Text>
                     </Card>
                 </Card>
             )}

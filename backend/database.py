@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
+import unicodedata
+import re
 import os
 
 Base = declarative_base()
@@ -47,13 +49,27 @@ class UsageLog(Base):
     # Relationships
     user = relationship("User", back_populates="usage_logs")
 
+
+def normalize_name(name: str) -> str:
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join(c for c in name if not unicodedata.combining(c))
+    name = name.strip().lower()
+    name = re.sub(r"[-_]+", " ", name)
+    name = re.sub(r"[^a-z0-9\s]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    return name
+
 class Player(Base):
     __tablename__ = "players"
-    
+    __table_args__ = (
+        UniqueConstraint("sport", "name_norm", name="uq_players_sport_name_norm"),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
+    name_norm = Column(String(120), nullable=False, index=True)
     birthdate = Column(String(10), nullable=False)  # YYYY-MM-DD
-    sport = Column(String(50), nullable=False)  # tennis, table-tennis, etc.
+    sport = Column(String(50), nullable=False)      # tennis, table-tennis, etc.
     country = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

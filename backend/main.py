@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, or_
 from datetime import date, datetime, timedelta
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import List, Optional
 import os
 from collections import defaultdict
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+import unicodedata, re
 
 import json
 
@@ -690,24 +692,32 @@ def search_players(
     sport: str = "",
     db: Session = Depends(get_db)
 ):
-    """Search players by name (autocomplete)"""
+    """Search players by name (autocomplete). Uses normalized name for accents/hyphens/etc."""
     query = db.query(Player)
-    
-    if q:
-        query = query.filter(Player.name.ilike(f"%{q}%"))
-    
+
     if sport:
         query = query.filter(Player.sport == sport)
-    
+
+    if q:
+        q_raw = q.strip()
+        q_norm = normalize_name(q_raw)
+
+        query = query.filter(
+            or_(
+                Player.name_norm.ilike(f"%{q_norm}%"),
+                Player.name.ilike(f"%{q_raw}%"),
+            )
+        )
+
     players = query.limit(10).all()
-    
+
     return [
         {
             "id": p.id,
             "name": p.name,
             "birthdate": p.birthdate,
             "sport": p.sport,
-            "country": p.country
+            "country": p.country,
         }
         for p in players
     ]
@@ -727,33 +737,28 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
         "country": player.country
     }
 
+def normalize_name(name: str) -> str:
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join(c for c in name if not unicodedata.combining(c))
+    name = name.strip().lower()
+    name = re.sub(r"[-_]+", " ", name)
+    name = re.sub(r"[^a-z0-9\s]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    return name
+
 # Seed players data (run once)
 @app.post("/admin/seed-players")
 def seed_players(
     request: Request,
-    force: bool = False, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """Seed player database. Requires ADMIN_KEY header."""
-    # Verify admin key
+    """Seed player database (idempotent upsert). Requires ADMIN_KEY header."""
     admin_key = request.headers.get("X-Admin-Key")
     expected_key = os.getenv("ADMIN_KEY")
-    
     if not expected_key:
         raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
-    
     if admin_key != expected_key:
         raise HTTPException(status_code=401, detail="Invalid admin key")
-    
-    # Check if already seeded
-    existing_count = db.query(Player).count()
-    if existing_count > 0 and not force:
-        return {"message": "Already seeded", "count": existing_count, "hint": "Use ?force=true to re-seed"}
-    
-    # Clear existing if forcing re-seed
-    if force and existing_count > 0:
-        db.query(Player).delete()
-        db.commit()
     
     players = [
         # Tennis - ATP Top 100 + more
@@ -941,14 +946,58 @@ def seed_players(
         {"name": "Hina Hayata", "birthdate": "2000-07-07", "sport": "table-tennis", "country": "Japan"},
     ]
     
+    deduped = {}
     for p in players:
-        player = Player(**p)
-        db.add(player)
-    
+        name = p["name"].strip()
+        sport = p["sport"].strip()
+        birthdate = p["birthdate"].strip()
+        country = (p.get("country") or "").strip() or None
+
+        name_norm = normalize_name(name)
+
+        # key: same person in same sport, ignore duplicates
+        k = (sport, name_norm)
+        if k not in deduped:
+            deduped[k] = {
+                "name": name,
+                "name_norm": name_norm,
+                "birthdate": birthdate,
+                "sport": sport,
+                "country": country,
+            }
+        else:
+            # if existing is missing country and new has it, fill it
+            if not deduped[k].get("country") and country:
+                deduped[k]["country"] = country
+
+    rows = list(deduped.values())
+
+    # Upsert via Postgres ON CONFLICT (sport, name_norm)
+    stmt = pg_insert(Player).values(rows)
+
+    update_cols = {
+        # keep name fresh (latest pretty formatting)
+        "name": stmt.excluded.name,
+        # keep birthdate up to date if seed has it
+        "birthdate": stmt.excluded.birthdate,
+        # only update country if new one is not null
+        "country": stmt.excluded.country,
+    }
+
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_players_sport_name_norm",
+        set_=update_cols,
+    )
+
+    result = db.execute(stmt)
     db.commit()
-    
-    action = "Re-seeded" if force else "Seeded"
-    return {"message": f"{action} {len(players)} players successfully", "count": len(players), "force": force}
+
+    return {
+        "message": "Seed completed (upsert)",
+        "input_count": len(players),
+        "deduped_count": len(rows),
+        "note": "Upserted by (sport, name_norm). No deletes performed.",
+    }
 
 # ---------------- FRONTEND (Vite React SPA) ----------------
 # Base paths (work both locally and in Docker/Railway)
