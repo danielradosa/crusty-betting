@@ -15,8 +15,8 @@ import {
   Badge,
   Typography,
   Alert,
-  Spin,
   Tooltip,
+  Skeleton,
 } from 'antd'
 import {
   PlusOutlined,
@@ -31,8 +31,10 @@ import {
   CopyOutlined
 } from '@ant-design/icons'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { useAuthStore } from '../hooks/useAuth'
+import { useAuth, useAuthStore } from '../hooks/useAuth'
 import { ApiKey } from '../types'
+import * as apiKeyService from '../services/apiKeyService'
+import { ApiError } from '../services/apiClient'
 
 const { Title, Text } = Typography
 
@@ -44,62 +46,56 @@ function Dashboard() {
   const [createLoading, setCreateLoading] = useState(false)
 
   const { accessToken } = useAuthStore()
+  const { user } = useAuth()
 
-  const { isConnected, stats, requestStats } = useWebSocket({
+  const { isConnected, stats, requestStats, error: wsError } = useWebSocket({
     autoConnect: true,
   })
 
-  const authHeaders = useCallback(() => {
-    if (!accessToken) return null
-    return { Authorization: `Bearer ${accessToken}` }
+  const tier = (user?.plan_tier || 'free').toLowerCase()
+  const keyLimit = tier === 'free' ? 1 : tier === 'starter' ? 3 : 'Unlimited'
+
+  const requireToken = useCallback(() => {
+    if (!accessToken) {
+      message.error('Not authenticated')
+      return null
+    }
+    return accessToken
   }, [accessToken])
 
   const fetchApiKeys = useCallback(async () => {
-    try {
-      const headers = authHeaders()
-      if (!headers) {
-        message.error('Not authenticated')
-        return
-      }
+    const token = requireToken()
+    if (!token) return
 
+    try {
       setLoading(true)
-      const response = await fetch('/api-keys', { headers })
-      if (!response.ok) throw new Error(await response.text())
-      const keys = await response.json()
+      const keys = await apiKeyService.listApiKeys(token)
       setApiKeys(keys)
-    } catch (error) {
+    } catch {
       message.error('Failed to fetch API keys')
     } finally {
       setLoading(false)
     }
-  }, [authHeaders])
+  }, [requireToken])
 
   useEffect(() => {
     fetchApiKeys()
   }, [fetchApiKeys])
 
   const handleCreateApiKey = async (values: { name: string }) => {
+    const token = requireToken()
+    if (!token) return
+
     setCreateLoading(true)
     try {
-      const headers = authHeaders()
-      if (!headers) {
-        message.error('Not authenticated')
-        return
-      }
-
-      const response = await fetch('/api-keys', {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      })
-      if (!response.ok) throw new Error(await response.text())
-      const newKey = await response.json()
+      const newKey = await apiKeyService.createApiKey(token, values.name)
       setApiKeys((prev) => [...prev, newKey])
       message.success('API key created')
       setIsCreateModalOpen(false)
       createForm.resetFields()
-    } catch (error) {
-      message.error('Failed to create API key')
+    } catch (e) {
+      if (e instanceof ApiError) message.error(e.message)
+      else message.error('Failed to create API key')
     } finally {
       setCreateLoading(false)
     }
@@ -110,22 +106,17 @@ function Dashboard() {
       title: 'Delete API Key?',
       content: 'This action cannot be undone.',
       onOk: async () => {
-        const headers = authHeaders()
-        if (!headers) {
-          message.error('Not authenticated')
-          return
-        }
+        const token = requireToken()
+        if (!token) return
 
-        const response = await fetch(`/api-keys/${id}`, {
-          method: 'DELETE',
-          headers,
-        })
-        if (!response.ok) {
-          message.error('Failed to delete API key')
-          return
+        try {
+          await apiKeyService.deleteApiKey(token, id)
+          setApiKeys((prev) => prev.filter((key) => String(key.id) !== String(id)))
+          message.success('API key deleted')
+        } catch (e) {
+          if (e instanceof ApiError) message.error(e.message)
+          else message.error('Failed to delete API key')
         }
-        setApiKeys((prev) => prev.filter((key) => String(key.id) !== String(id)))
-        message.success('API key deleted')
       },
     })
   }
@@ -164,6 +155,11 @@ function Dashboard() {
       title: 'Status',
       dataIndex: 'active',
       key: 'active',
+      filters: [
+        { text: 'Active', value: 'active' },
+        { text: 'Revoked', value: 'revoked' },
+      ],
+      onFilter: (value: any, record: ApiKey) => (value === 'active' ? record.active : !record.active),
       render: (isActive: boolean) =>
         isActive ? (
           <Tag icon={<CheckCircleOutlined />} color='success'>
@@ -179,12 +175,14 @@ function Dashboard() {
       title: 'Usage',
       dataIndex: 'request_count',
       key: 'request_count',
+      sorter: (a: ApiKey, b: ApiKey) => (a.request_count || 0) - (b.request_count || 0),
       render: (count: number) => `${count} requests`,
     },
     {
       title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
+      sorter: (a: ApiKey, b: ApiKey) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
@@ -211,39 +209,59 @@ function Dashboard() {
         <ApiOutlined /> Dashboard
       </Title>
 
+      <Alert
+        style={{ marginBottom: 16 }}
+        type='info'
+        showIcon
+        message={`Current tier: ${tier.toUpperCase()} · API keys: ${apiKeys.filter(k => k.active).length}/${keyLimit}`}
+        description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000/day soft cap with fair-use policy.' : undefined}
+      />
+
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic
-              title={
-                <Space>
-                  <Text>Connection</Text>
-                  <Tooltip title='Real-time updates via WebSocket'>
-                    <QuestionCircleOutlined />
-                  </Tooltip>
-                </Space>
-              }
-              value={isConnected ? 'Connected' : 'Disconnected'}
-              valueStyle={{ color: isConnected ? '#3f8600' : '#cf1322' }}
-              prefix={isConnected ? <SyncOutlined spin /> : <CloseCircleOutlined />}
-            />
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+            ) : (
+              <Statistic
+                title={
+                  <Space>
+                    <Text>Connection</Text>
+                    <Tooltip title='Real-time updates via WebSocket'>
+                      <QuestionCircleOutlined />
+                    </Tooltip>
+                  </Space>
+                }
+                value={isConnected ? 'Connected' : 'Disconnected'}
+                valueStyle={{ color: isConnected ? '#3f8600' : '#cf1322' }}
+                prefix={isConnected ? <SyncOutlined spin /> : <CloseCircleOutlined />}
+              />
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic title='Daily Requests' value={stats?.daily_requests || 0} prefix={<ApiOutlined />} />
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+            ) : (
+              <Statistic title='Daily Requests' value={stats?.daily_requests || 0} prefix={<ApiOutlined />} />
+            )}
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic title='Total Requests' value={stats?.total_requests || 0} prefix={<KeyOutlined />} />
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+            ) : (
+              <Statistic title='Total Requests' value={stats?.total_requests || 0} prefix={<KeyOutlined />} />
+            )}
           </Card>
         </Col>
       </Row>
 
       <Row style={{ marginBottom: 16 }}>
         <Col span={24}>
-          <Space>
+          <Space wrap>
             <Button type='primary' icon={<ReloadOutlined />} onClick={requestStats} disabled={!isConnected}>
               Refresh Stats
             </Button>
@@ -253,6 +271,16 @@ function Dashboard() {
           </Space>
         </Col>
       </Row>
+
+      {wsError && (
+        <Alert
+          type='warning'
+          showIcon
+          style={{ marginBottom: 16 }}
+          message='Realtime connection issue'
+          description={wsError}
+        />
+      )}
 
       <Card
         title={
@@ -269,11 +297,17 @@ function Dashboard() {
         }
       >
         {loading ? (
-          <Spin tip='Loading...' />
+          <Skeleton active paragraph={{ rows: 6 }} />
         ) : apiKeys.length > 0 ? (
-          <Table dataSource={apiKeys} columns={columns} rowKey='id' pagination={false} />
+          <Table dataSource={apiKeys} columns={columns} rowKey='id' pagination={false} scroll={{ x: 760 }} />
         ) : (
-          <Alert message='No API Keys' description='You have not created any API keys yet.' type='info' showIcon />
+          <Alert
+            message='No API Keys'
+            description='You have not created any API keys yet.'
+            type='info'
+            showIcon
+            action={<Button type='primary' size='small' onClick={() => setIsCreateModalOpen(true)}>Create first key</Button>}
+          />
         )}
       </Card>
 

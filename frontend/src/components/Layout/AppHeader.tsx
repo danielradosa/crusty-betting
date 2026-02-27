@@ -1,4 +1,4 @@
-import { Layout, Menu, Button, Space, Typography } from 'antd'
+import { Layout, Menu, Button, Space, Typography, Grid, Drawer } from 'antd'
 import {
   UserOutlined,
   DashboardOutlined,
@@ -6,18 +6,24 @@ import {
   LoginOutlined,
   LogoutOutlined,
   DotChartOutlined,
-  RobotOutlined
+  RobotOutlined,
+  MenuOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useState } from 'react'
 
 const { Header } = Layout
 const { Text } = Typography
+const { useBreakpoint } = Grid
 
 function AppHeader() {
   const { isAuthenticated, user, logout } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
+  const [open, setOpen] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -25,11 +31,7 @@ function AppHeader() {
   }
 
   const menuItems = [
-    {
-      key: '/',
-      icon: <HomeOutlined />,
-      label: <Link to='/'>Home</Link>,
-    },
+    { key: '/', icon: <HomeOutlined />, label: <Link to='/'>Home</Link> },
     ...(isAuthenticated
       ? [
           {
@@ -40,73 +42,83 @@ function AppHeader() {
           {
             key: '/analyzer',
             icon: <DotChartOutlined />,
-            label: <Link to='/analyzer'>Analyzer</Link>
+            label: <Link to='/analyzer'>Analyzer</Link>,
           },
-          {
-            key: '/bot',
-            icon: <RobotOutlined />,
-            label: <Link to='/bot'>Bot</Link>
-          }
+          { key: '/bot', icon: <RobotOutlined />, label: <Link to='/bot'>Bot</Link> },
         ]
       : []),
   ]
 
   return (
-    <Header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Text
-          style={{
-            color: '#fff',
-            fontSize: 20,
-            fontWeight: 'bold',
-            marginRight: 40,
-          }}
-        >
-          <Link to='/'>🔮 SPORTOLOGY</Link>
-        </Text>
-        <Menu
-          theme='dark'
-          mode='horizontal'
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          style={{ flex: 1, minWidth: 0 }}
-        />
+    <Header className='app-header'>
+      <div className='brand-wrap'>
+        <Link to='/' className='brand-link'>
+          🔮 SPORTOLOGY
+        </Link>
       </div>
 
-      <Space>
+      {!isMobile && (
+        <>
+          <Menu mode='horizontal' selectedKeys={[location.pathname]} items={menuItems} className='top-menu' />
+          <Space>
+            {isAuthenticated ? (
+              <>
+                <Text className='header-user'>
+                  <UserOutlined /> {user?.email}
+                </Text>
+                <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to='/login'>
+                  <Button type='primary' icon={<LoginOutlined />}>
+                    Login
+                  </Button>
+                </Link>
+                <Link to='/signup'>
+                  <Button>Sign Up</Button>
+                </Link>
+              </>
+            )}
+          </Space>
+        </>
+      )}
+
+      {isMobile && (
+        <Button type='text' icon={<MenuOutlined />} onClick={() => setOpen(true)} />
+      )}
+
+      <Drawer placement='right' open={open} onClose={() => setOpen(false)} title='Menu'>
+        <Menu
+          mode='inline'
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          style={{ borderInlineEnd: 0, marginBottom: 12 }}
+          onClick={() => setOpen(false)}
+        />
+
         {isAuthenticated ? (
-          <>
-            <Text style={{ color: '#fff' }}>
-              <UserOutlined /> {user?.email}
-            </Text>
-            <Button
-              type='primary'
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-            >
+          <Space direction='vertical' style={{ width: '100%' }}>
+            <Text type='secondary'>{user?.email}</Text>
+            <Button danger icon={<LogoutOutlined />} onClick={handleLogout} block>
               Logout
             </Button>
-          </>
+          </Space>
         ) : (
-          <>
-            <Link to='/login'>
-              <Button type='primary' icon={<LoginOutlined />}>
+          <Space direction='vertical' style={{ width: '100%' }}>
+            <Link to='/login' onClick={() => setOpen(false)}>
+              <Button type='primary' icon={<LoginOutlined />} block>
                 Login
               </Button>
             </Link>
-            <Link to='/signup'>
-              <Button>Sign Up</Button>
+            <Link to='/signup' onClick={() => setOpen(false)}>
+              <Button block>Sign Up</Button>
             </Link>
-          </>
+          </Space>
         )}
-      </Space>
+      </Drawer>
     </Header>
   )
 }

@@ -15,7 +15,7 @@ import unicodedata, re
 
 import json
 
-from database import create_tables, get_db, User, APIKey, DemoUsage, Player, UsageLog
+from database import create_tables, get_db, User, APIKey, DemoUsage, Player, UsageLog, UserIPClaim
 from auth import (
     get_password_hash, verify_password, create_access_token, 
     get_current_user, get_api_key_user, generate_api_key, 
@@ -86,9 +86,28 @@ app = FastAPI(
 )
 
 # CORS middleware
+# - Dev: allow local frontend/backend origins
+# - Prod: allow only explicit origin(s) from env (no wildcard)
+env_name = os.getenv("ENV", "development").lower()
+explicit_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+
+if explicit_origins:
+    cors_origins = explicit_origins
+elif env_name == "production":
+    # In production, keep this strict. Set CORS_ORIGINS or PUBLIC_ORIGIN.
+    public_origin = os.getenv("PUBLIC_ORIGIN", "").strip()
+    cors_origins = [public_origin] if public_origin else []
+else:
+    cors_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,6 +126,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     created_at: str
+    plan_tier: str
     
     class Config:
         from_attributes = True
@@ -118,6 +138,13 @@ class TokenResponse(BaseModel):
 
 class APIKeyCreate(BaseModel):
     name: Optional[str] = "Default Key"
+
+
+TIER_API_KEY_LIMITS = {
+    "free": 1,
+    "starter": 3,
+    "pro": None,  # unlimited keys
+}
 
 class APIKeyResponse(BaseModel):
     id: int
@@ -286,7 +313,7 @@ def health_check():
 
 # Authentication endpoints
 @app.post("/auth/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def signup(user_data: UserCreate, db: Session = Depends(get_db)):
+def signup(user_data: UserCreate, req: Request, db: Session = Depends(get_db)):
     try:
         # Check if user exists
         existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -295,30 +322,37 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        
-        # Debug logging
-        print(f"Signup attempt for: {user_data.email}")
-        print(f"Password length: {len(user_data.password)} chars, {len(user_data.password.encode('utf-8'))} bytes")
-        
+
+        # Anti-abuse: one account per IP
+        client_ip = get_client_ip(req)
+        existing_ip_claim = db.query(UserIPClaim).filter(UserIPClaim.ip_address == client_ip).first()
+        if existing_ip_claim:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Account limit reached for this IP (max 1 free account)."
+            )
+
         # Create user
         try:
             hashed_password = get_password_hash(user_data.password)
-            print(f"Password hashed successfully")
         except Exception as e:
-            print(f"Password hash error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Password processing failed: {str(e)}"
             )
-        
+
         new_user = User(
             email=user_data.email,
-            password_hash=hashed_password
+            password_hash=hashed_password,
+            plan_tier="free"
         )
         db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        
+        db.flush()
+
+        # Lock IP -> user mapping
+        ip_claim = UserIPClaim(user_id=new_user.id, ip_address=client_ip)
+        db.add(ip_claim)
+
         # Create default API key
         api_key = generate_api_key()
         new_api_key = APIKey(
@@ -328,6 +362,7 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         )
         db.add(new_api_key)
         db.commit()
+        db.refresh(new_user)
         
         # Generate token
         access_token = create_access_token(data={"sub": new_user.email})
@@ -338,7 +373,8 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
             "user": {
                 "id": new_user.id,
                 "email": new_user.email,
-                "created_at": new_user.created_at.isoformat()
+                "created_at": new_user.created_at.isoformat(),
+                "plan_tier": new_user.plan_tier,
             }
         }
     except HTTPException:
@@ -369,7 +405,8 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
         "user": {
             "id": user.id,
             "email": user.email,
-            "created_at": user.created_at.isoformat()
+            "created_at": user.created_at.isoformat(),
+            "plan_tier": user.plan_tier,
         }
     }
 
@@ -378,7 +415,8 @@ def get_me(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "created_at": current_user.created_at.isoformat()
+        "created_at": current_user.created_at.isoformat(),
+        "plan_tier": current_user.plan_tier,
     }
 
 # API Key management endpoints
@@ -388,6 +426,25 @@ def create_api_key(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    tier = (current_user.plan_tier or "free").lower()
+    key_limit = TIER_API_KEY_LIMITS.get(tier, 1)
+
+    active_keys_count = db.query(APIKey).filter(
+        APIKey.user_id == current_user.id,
+        APIKey.active == True
+    ).count()
+
+    if key_limit is not None and active_keys_count >= key_limit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": f"API key limit reached for {tier} tier.",
+                "tier": tier,
+                "key_limit": key_limit,
+                "active_keys": active_keys_count,
+            }
+        )
+
     api_key = generate_api_key()
     new_key = APIKey(
         user_id=current_user.id,
@@ -397,7 +454,7 @@ def create_api_key(
     db.add(new_key)
     db.commit()
     db.refresh(new_key)
-    
+
     return {
         "id": new_key.id,
         "name": new_key.name,
@@ -479,7 +536,7 @@ def analyze_match_endpoint(
     db: Session = Depends(get_db)
 ):
     # Check rate limit
-    check_rate_limit(current_user.id, db)
+    check_rate_limit(current_user, db)
     
     try:
         result = analyze_match(
@@ -646,12 +703,16 @@ def get_usage_stats(
         UsageLog.user_id == current_user.id
     ).count()
     
+    tier = (current_user.plan_tier or "free").lower()
+    limit_by_tier = {"free": 10, "starter": 100, "pro": 1000}
+
     return JSONResponse(
         content={
             "today": today_count,
             "this_month": month_count,
             "total": total_count,
-            "limit": 10,
+            "tier": tier,
+            "limit": limit_by_tier.get(tier, 10),
             "reset_time": today_end.isoformat()
         },
         headers={
@@ -685,6 +746,34 @@ def debug_usage_logs(
             for log in logs
         ]
     }
+
+@app.post("/admin/users/{user_id}/tier")
+def set_user_tier(
+    user_id: int,
+    tier: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Set user tier manually (admin). Requires X-Admin-Key header."""
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    normalized = tier.strip().lower()
+    if normalized not in {"free", "starter", "pro"}:
+        raise HTTPException(status_code=400, detail="tier must be one of: free, starter, pro")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.plan_tier = normalized
+    db.commit()
+
+    return {"message": "Tier updated", "user_id": user.id, "tier": user.plan_tier}
 
 # Player database endpoints
 @app.get("/api/v1/players")

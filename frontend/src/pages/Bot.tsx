@@ -12,6 +12,7 @@ import {
     Typography,
     message,
     Collapse,
+    Input,
 } from "antd"
 import {
     ApiOutlined,
@@ -303,16 +304,9 @@ if __name__ == "__main__":
                             </Paragraph>
 
                             <Space.Compact style={{ width: "100%" }}>
-                                <input
+                                <Input
                                     value={apiKeyPreview}
                                     onChange={(e) => setApiKeyPreview(e.target.value)}
-                                    style={{
-                                        width: "100%",
-                                        padding: "8px 10px",
-                                        border: "1px solid #d9d9d9",
-                                        borderRadius: 6,
-                                        outline: "none",
-                                    }}
                                     placeholder="sn_..."
                                 />
                                 <Button icon={<CopyOutlined />} onClick={() => copy(apiKeyPreview)}>

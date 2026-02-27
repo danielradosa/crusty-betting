@@ -14,27 +14,27 @@ import {
     Col,
     Row,
     Divider,
-    Statistic,
     AutoComplete,
+    Progress,
+    Grid,
 } from "antd"
-import { InfoCircleOutlined } from "@ant-design/icons"
+import { InfoCircleOutlined, DotChartOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
+import { Link } from 'react-router-dom'
 import { useAuthStore } from "../hooks/useAuth"
-import type { ApiKey } from "../types"
+import type { ApiKey, MatchAnalysisResponse, MatchAnalysisRequest } from "../types"
+import * as apiKeyService from '../services/apiKeyService'
+import { analyzeMatch } from '../services/analysisService'
+import { searchPlayers, type PlayerSuggestion } from '../services/playerService'
+import { ApiError } from '../services/apiClient'
+import { getUsageStats, type UsageStats } from '../services/usageService'
 
 const { Title, Text } = Typography
-
-type PlayerSuggestion = {
-    id: number
-    name: string
-    birthdate: string // YYYY-MM-DD
-    sport: string
-    country?: string | null
-}
+const { useBreakpoint } = Grid
 
 type AnalyzeFormValues = {
     apiKey: string
-    sport: string
+    sport: MatchAnalysisRequest['sport']
     player1_name: string
     player1_birthdate: any
     player2_name: string
@@ -52,13 +52,16 @@ const sportOptions = [
 export default function Analyzer() {
     const [form] = Form.useForm<AnalyzeFormValues>()
     const { accessToken } = useAuthStore()
+    const screens = useBreakpoint()
+    const isMobile = !screens.md
 
     const [keys, setKeys] = useState<ApiKey[]>([])
     const [keysLoading, setKeysLoading] = useState(true)
 
     const [loading, setLoading] = useState(false)
-    const [result, setResult] = useState<any>(null)
+    const [result, setResult] = useState<MatchAnalysisResponse | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [usage, setUsage] = useState<UsageStats | null>(null)
 
     const activeKeys = useMemo(() => keys.filter((k) => k.active), [keys])
 
@@ -83,16 +86,7 @@ export default function Analyzer() {
             try {
                 if (!accessToken) throw new Error("Not authenticated")
 
-                const res = await fetch("/api-keys", {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                })
-
-                if (!res.ok) {
-                    const text = await res.text().catch(() => "")
-                    throw new Error(text || "Failed to load API keys")
-                }
-
-                const data: ApiKey[] = await res.json()
+                const data: ApiKey[] = await apiKeyService.listApiKeys(accessToken)
                 setKeys(data)
 
                 const firstActive = data.find((k) => k.active)
@@ -107,13 +101,18 @@ export default function Analyzer() {
         loadKeys()
     }, [accessToken, form])
 
-    const searchPlayers = async (q: string, sport: string): Promise<PlayerSuggestion[]> => {
-        if (!q?.trim()) return []
-        const url = `/api/v1/players?q=${encodeURIComponent(q)}&sport=${encodeURIComponent(sport || "")}`
-        const res = await fetch(url)
-        if (!res.ok) return []
-        return res.json()
-    }
+    useEffect(() => {
+        const loadUsage = async () => {
+            if (!accessToken) return
+            try {
+                const stats = await getUsageStats(accessToken)
+                setUsage(stats)
+            } catch {
+                // non-blocking
+            }
+        }
+        loadUsage()
+    }, [accessToken])
 
     const makeAutocompleteOptions = (players: PlayerSuggestion[]) =>
         players.map((p) => ({
@@ -211,7 +210,7 @@ export default function Analyzer() {
             const apiKey = values.apiKey
             if (!apiKey) throw new Error("Please select an API key")
 
-            const payload = {
+            const payload: MatchAnalysisRequest = {
                 player1_name: values.player1_name,
                 player1_birthdate: values.player1_birthdate.format("YYYY-MM-DD"),
                 player2_name: values.player2_name,
@@ -220,25 +219,21 @@ export default function Analyzer() {
                 sport: values.sport,
             }
 
-            const res = await fetch("/api/v1/analyze-match", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-API-Key": apiKey,
-                },
-                body: JSON.stringify(payload),
-            })
-
-            if (!res.ok) {
-                const text = await res.text().catch(() => "")
-                throw new Error(text || "Analysis failed")
-            }
-
-            const data = await res.json()
+            const data = await analyzeMatch(payload, apiKey)
             setResult(data)
             message.success("Analysis complete ✅")
+            if (accessToken) {
+                const stats = await getUsageStats(accessToken)
+                setUsage(stats)
+            }
         } catch (e: any) {
-            setError(e?.message || "Something went wrong")
+            if (e instanceof ApiError && e.status === 429 && typeof e.details === 'object') {
+                const d = e.details as any
+                const resetInfo = d?.reset_time ? ` Resets at: ${new Date(d.reset_time).toLocaleString()}.` : ''
+                setError((e.message || 'Daily limit reached.') + resetInfo)
+            } else {
+                setError(e?.message || "Something went wrong")
+            }
         } finally {
             setLoading(false)
         }
@@ -246,7 +241,20 @@ export default function Analyzer() {
 
     return (
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            <Title level={2}>Match Analyzer</Title>
+            <Title level={2}><DotChartOutlined /> Match Analyzer</Title>
+
+            {usage && (
+                <Card style={{ marginBottom: 12 }}>
+                    <Space direction='vertical' style={{ width: '100%' }} size={6}>
+                        <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                            <Text strong>Daily usage</Text>
+                            <Text>{usage.today}/{usage.limit}</Text>
+                        </Space>
+                        <Progress percent={Math.min(100, Math.round((usage.today / Math.max(1, usage.limit)) * 100))} showInfo={false} />
+                        <Text type='secondary'>Resets at {new Date(usage.reset_time).toLocaleString()}</Text>
+                    </Space>
+                </Card>
+            )}
 
             <Card>
                 {keysLoading ? (
@@ -257,6 +265,7 @@ export default function Analyzer() {
                         showIcon
                         message="No active API keys"
                         description="Create an API key in the Dashboard first (or re-activate one)."
+                        action={<Link to='/dashboard'><Button type='primary' size='small'>Go to Dashboard</Button></Link>}
                     />
                 ) : (
                     <Form
@@ -264,6 +273,7 @@ export default function Analyzer() {
                         layout="vertical"
                         initialValues={{ sport: "tennis", match_date: dayjs() }}
                         onFinish={onFinish}
+                        scrollToFirstError
                     >
                         <Form.Item
                             label="API Key"
@@ -309,7 +319,7 @@ export default function Analyzer() {
                                     name="player1_birthdate"
                                     rules={[{ required: true }]}
                                 >
-                                    <DatePicker style={{ width: "100%" }} disabled={p1BirthLocked} />
+                                    <DatePicker format='L' inputReadOnly style={{ width: "100%" }} disabled={p1BirthLocked} />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -340,22 +350,24 @@ export default function Analyzer() {
                                     name="player2_birthdate"
                                     rules={[{ required: true }]}
                                 >
-                                    <DatePicker style={{ width: "100%" }} disabled={p2BirthLocked} />
+                                    <DatePicker format='L' inputReadOnly style={{ width: "100%" }} disabled={p2BirthLocked} />
                                 </Form.Item>
                             </Col>
                         </Row>
 
                         <Form.Item label="Match Date" name="match_date" rules={[{ required: true }]}>
-                            <DatePicker style={{ width: "100%" }} />
+                            <DatePicker format='L' inputReadOnly style={{ width: "100%" }} />
                         </Form.Item>
 
                         {error && (
                             <Alert style={{ marginBottom: 12 }} type="error" showIcon message="Error" description={error} />
                         )}
 
-                        <Button type="primary" htmlType="submit" loading={loading} disabled={activeKeys.length === 0}>
-                            Analyze Match
-                        </Button>
+                        <div className={isMobile ? 'analyzer-sticky-submit' : ''}>
+                            <Button type="primary" htmlType="submit" loading={loading} disabled={activeKeys.length === 0} block={isMobile}>
+                                Analyze Match
+                            </Button>
+                        </div>
                     </Form>
                 )}
             </Card>
@@ -366,74 +378,33 @@ export default function Analyzer() {
                         🏆 Prediction Result
                     </Title>
 
-                    <Row gutter={16} style={{ marginBottom: 16 }}>
-                        <Col xs={24} md={8}>
-                            <Card bordered>
-                                <Statistic title="Predicted Winner" value={result.winner_prediction} />
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} md={8}>
-                            <Card bordered>
-                                <Statistic title="Confidence" value={String(result.confidence || "").replace("_", " ")} />
-                            </Card>
-                        </Col>
-
-                        <Col xs={24} md={8}>
-                            <Card bordered>
-                                <Statistic title="Score Difference" value={result.score_difference} prefix="Δ" />
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    <Card style={{ marginBottom: 16 }} type="inner">
-                        <Space align="start">
-                            <InfoCircleOutlined style={{ marginTop: 4 }} />
-                            <Text>
-                                <strong>How scoring works:</strong> Higher total score = more likely to win
-                                (according to numerological alignment for the selected match date).
-                            </Text>
+                    <Card style={{ marginBottom: 16 }} type='inner'>
+                        <Space direction='vertical' style={{ width: '100%' }} size={8}>
+                            <Text strong style={{ fontSize: 16 }}>Pick: {result.winner_prediction}</Text>
+                            <Text>Confidence: {String(result.confidence || '').replace('_', ' ')}</Text>
+                            <Text type='secondary'>Score delta: Δ {result.score_difference}</Text>
                         </Space>
                     </Card>
 
                     <Row gutter={16} style={{ marginBottom: 16 }}>
                         <Col xs={24} md={12}>
-                            <Card title={`👤 ${result.player1?.name || "Player 1"}`} bordered>
+                            <Card bordered title={result.player1?.name || 'Player 1'}>
+                                <Text>Total Score: {result.player1?.score}</Text>
+                                <Progress percent={Math.min(100, Math.max(0, Number(result.player1?.score || 0)))} showInfo={false} strokeColor='#7a4dd8' />
+                                <Divider style={{ margin: '12px 0' }} />
                                 <p><strong>Life Path:</strong> {result.player1?.life_path}</p>
                                 <p><strong>Expression:</strong> {result.player1?.expression}</p>
                                 <p><strong>Personal Year:</strong> {result.player1?.personal_year}</p>
-                                <p><strong>Total Score:</strong> {result.player1?.score}</p>
-
-                                {result.player1?.reasons?.length > 0 && (
-                                    <>
-                                        <Divider />
-                                        <ul style={{ paddingLeft: 16 }}>
-                                            {result.player1.reasons.map((r: string, i: number) => (
-                                                <li key={i}>{r}</li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                )}
                             </Card>
                         </Col>
-
                         <Col xs={24} md={12}>
-                            <Card title={`👤 ${result.player2?.name || "Player 2"}`} bordered>
+                            <Card bordered title={result.player2?.name || 'Player 2'}>
+                                <Text>Total Score: {result.player2?.score}</Text>
+                                <Progress percent={Math.min(100, Math.max(0, Number(result.player2?.score || 0)))} showInfo={false} strokeColor='#d6922f' />
+                                <Divider style={{ margin: '12px 0' }} />
                                 <p><strong>Life Path:</strong> {result.player2?.life_path}</p>
                                 <p><strong>Expression:</strong> {result.player2?.expression}</p>
                                 <p><strong>Personal Year:</strong> {result.player2?.personal_year}</p>
-                                <p><strong>Total Score:</strong> {result.player2?.score}</p>
-
-                                {result.player2?.reasons?.length > 0 && (
-                                    <>
-                                        <Divider />
-                                        <ul style={{ paddingLeft: 16 }}>
-                                            {result.player2.reasons.map((r: string, i: number) => (
-                                                <li key={i}>{r}</li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                )}
                             </Card>
                         </Col>
                     </Row>
@@ -442,6 +413,23 @@ export default function Analyzer() {
                         <p><strong>Suggested Bet Size:</strong> {result.bet_size}</p>
                         <p><strong>Recommendation:</strong> {result.recommendation}</p>
                     </Card>
+
+                    <Card style={{ marginBottom: 16 }} type="inner">
+                        <Space align="start">
+                            <InfoCircleOutlined style={{ marginTop: 4 }} />
+                            <Text>
+                                <strong>How scoring works:</strong> Higher total score = more likely to win (numerological alignment for this match date).
+                            </Text>
+                        </Space>
+                    </Card>
+
+                    <Alert
+                        type='warning'
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                        message='Risk reminder'
+                        description='Numerology is directional, not guaranteed. Use strict bankroll discipline and hard loss limits.'
+                    />
 
                     <Card type="inner" title="📝 Analysis Summary">
                         <Text style={{ whiteSpace: "pre-line" }}>{result.analysis_summary}</Text>

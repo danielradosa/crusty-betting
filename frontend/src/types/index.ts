@@ -2,6 +2,7 @@ export interface User {
   id: string
   email: string
   created_at: string
+  plan_tier?: 'free' | 'starter' | 'pro' | string
 }
 
 export interface ApiKey {
@@ -20,7 +21,7 @@ export interface MatchAnalysisRequest {
   player2_name: string
   player2_birthdate: string
   match_date: string
-  sport: 'tennis' | 'table_tennis' | 'boxing' | 'mma'
+  sport: 'tennis' | 'table-tennis' | 'boxing' | 'mma' | 'basketball' | 'football'
 }
 
 export interface PlayerAnalysis {

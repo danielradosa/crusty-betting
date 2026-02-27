@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.1",
+    "@ant-design/icons": "^5.5.1",
     "antd": "^5.20.6",
     "axios": "^1.7.7",
-    "@ant-design/icons": "^5.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^6.26.1",
+    "react-router-dom": "^6.26.1",
+    "scroll-into-view-if-needed": "^2.2.31",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
@@ -25,4 +27,3 @@
     "vite": "^5.4.1"
   }
 }
-

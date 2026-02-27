@@ -7,6 +7,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+          antd: ['antd', '@ant-design/icons'],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
@@ -22,4 +30,3 @@ export default defineConfig({
     },
   },
 })
-

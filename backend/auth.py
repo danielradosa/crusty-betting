@@ -125,27 +125,46 @@ async def get_api_key_user(
     
     return api_key_record.user
 
-def check_rate_limit(user_id: int, db: Session):
-    """Check if user has exceeded daily limit (10 requests for free tier)"""
+TIER_DAILY_LIMITS = {
+    "free": 10,
+    "starter": 100,
+    "pro": 1000,  # soft cap + fair use
+}
+
+
+def check_rate_limit(user: User, db: Session):
+    """Check if user has exceeded daily limit by tier."""
     from datetime import date
-    
+
     today = date.today()
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
-    
+
+    tier = (user.plan_tier or "free").lower()
+    limit = TIER_DAILY_LIMITS.get(tier, TIER_DAILY_LIMITS["free"])
+
     request_count = db.query(UsageLog).filter(
-        UsageLog.user_id == user_id,
+        UsageLog.user_id == user.id,
         UsageLog.timestamp >= today_start,
         UsageLog.timestamp <= today_end,
         UsageLog.success == True
     ).count()
-    
-    if request_count >= 10:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Daily limit exceeded. Free tier allows 10 requests per day."
-        )
-    
+
+    if request_count >= limit:
+        reset_time = today_end
+        detail = {
+            "message": f"Daily limit exceeded for {tier} tier.",
+            "tier": tier,
+            "limit": limit,
+            "used": request_count,
+            "remaining": 0,
+            "reset_time": reset_time.isoformat(),
+        }
+        if tier == "pro":
+            detail["fair_use"] = "Pro includes a soft cap and is subject to fair-use policy for abuse prevention."
+
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=detail)
+
     return True
 
 def generate_api_key():

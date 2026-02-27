@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, Text, UniqueConstraint, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    plan_tier = Column(String(20), default="free", nullable=False)
     
     # Relationships
     api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
@@ -73,6 +74,14 @@ class Player(Base):
     country = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class UserIPClaim(Base):
+    __tablename__ = "user_ip_claims"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    ip_address = Column(String(45), unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class DemoUsage(Base):
     __tablename__ = "demo_usage"
     
@@ -90,6 +99,19 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def create_tables():
     Base.metadata.create_all(bind=engine)
+    ensure_schema_updates()
+
+
+def ensure_schema_updates():
+    insp = inspect(engine)
+    if "users" not in insp.get_table_names():
+        return
+
+    cols = {c["name"] for c in insp.get_columns("users")}
+    if "plan_tier" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN plan_tier VARCHAR(20) DEFAULT 'free'"))
+            conn.execute(text("UPDATE users SET plan_tier='free' WHERE plan_tier IS NULL"))
 
 def get_db():
     db = SessionLocal()

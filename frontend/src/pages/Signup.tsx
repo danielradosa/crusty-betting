@@ -41,7 +41,7 @@ function Signup() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '64px auto' }}>
+    <div className='auth-card-wrap'>
       <Card>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Title level={3}>
