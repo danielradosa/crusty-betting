@@ -402,13 +402,6 @@ if __name__ == "__main__":
                         },
                     ]}
                 />
-
-                <Alert
-                    type="success"
-                    showIcon
-                    message="Next up"
-                    description="Once your Analyzer page is stable, we can add: saved bot presets, paper trading mode, and a webhook runner."
-                />
             </Space>
         </div>
     )

@@ -45,7 +45,7 @@ function AppHeader() {
           {
             key: '/bot',
             icon: <RobotOutlined />,
-            label: <Link to='/bot'></Link>
+            label: <Link to='/bot'>Bot</Link>
           }
         ]
       : []),
@@ -68,7 +68,7 @@ function AppHeader() {
             marginRight: 40,
           }}
         >
-          🔮 SPORTOLOGY
+          <Link to='/'>🔮 SPORTOLOGY</Link>
         </Text>
         <Menu
           theme='dark'

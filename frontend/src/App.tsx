@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { Layout } from 'antd'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -28,7 +28,7 @@ function App() {
             </Routes>
           </Content>
           <Footer style={{ textAlign: 'center' }}>
-            2026 ©{new Date().getFullYear()} - SPORTOLOGY + API
+            © {new Date().getFullYear()} - SPORTOLOGY + API by <Link to='https://danielradosa.com'>Daniel Radosa</Link>
           </Footer>
         </Layout>
       </Router>
