@@ -18,7 +18,7 @@ import {
     Progress,
     Grid,
 } from "antd"
-import { InfoCircleOutlined, DotChartOutlined } from "@ant-design/icons"
+import { InfoCircleOutlined, DotChartOutlined, CaretUpOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
 import { Link } from 'react-router-dom'
 import { getLocaleDateFormat } from '../utils/dateFormat'
@@ -44,8 +44,8 @@ type AnalyzeFormValues = {
 }
 
 const sportOptions = [
-    { value: "tennis", label: "Tennis" },
-    { value: "table-tennis", label: "Table Tennis" },
+    { value: "tennis", label: "🎾 Tennis" },
+    { value: "table-tennis", label: "🏓 Table Tennis" },
 ]
 
 export default function Analyzer() {
@@ -382,7 +382,7 @@ export default function Analyzer() {
                         <Space direction='vertical' style={{ width: '100%' }} size={8}>
                             <Text strong style={{ fontSize: 16 }}>Pick: {result.winner_prediction}</Text>
                             <Text>Confidence: {String(result.confidence || '').replace('_', ' ')}</Text>
-                            <Text type='secondary'>Score delta: Δ {result.score_difference}</Text>
+                            <Text type='secondary'>Score delta: <CaretUpOutlined /> {result.score_difference}</Text>
                         </Space>
                     </Card>
 

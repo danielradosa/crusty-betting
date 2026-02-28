@@ -858,6 +858,10 @@ def suggest_players(
         for item in results:
             if len(suggestions) >= 10:
                 break
+            # filter by sport keyword in description when possible
+            desc = (item.get("description") or "").lower()
+            if sport_keyword and sport_keyword not in desc:
+                continue
             entity_id = item.get("id")
             if not entity_id:
                 continue
