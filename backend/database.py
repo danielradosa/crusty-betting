@@ -71,7 +71,6 @@ class Player(Base):
     name_norm = Column(String(120), nullable=False, index=True)
     birthdate = Column(String(10), nullable=True)  # YYYY-MM-DD
     sport = Column(String(50), nullable=False)      # tennis, table-tennis, etc.
-    country = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class UserIPClaim(Base):
