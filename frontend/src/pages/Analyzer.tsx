@@ -130,7 +130,7 @@ export default function Analyzer() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                     <span>{p.name}</span>
                     <span style={{ opacity: 0.65, fontSize: 12 }}>
-                        {p.birthdate}
+                        {p.birthdate ? dayjs(p.birthdate, 'YYYY-MM-DD').format(dateFormat) : ''}
                         {p.country ? ` • ${p.country}` : ""}
                     </span>
                 </div>
