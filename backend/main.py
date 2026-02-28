@@ -839,6 +839,27 @@ def suggest_players(
         )
     db_players = query.limit(10).all()
     for p in db_players:
+        # If missing data, refresh from Wikidata (source of truth)
+        if not p.birthdate or not p.country:
+            sport_keyword = "tennis player" if p.sport == "tennis" else "table tennis"
+            results = _wikidata_search(p.name, sport_keyword)
+            if not results:
+                results = _wikidata_search(p.name, "")
+            entity_id = _pick_entity(results, sport_keyword)
+            if entity_id:
+                entity = _wikidata_get(entity_id)
+                if _is_human_sport_entity(entity, p.sport):
+                    birthdate = _extract_birthdate(entity)
+                    country = _extract_country(entity)
+                    updated = False
+                    if birthdate and p.birthdate != birthdate:
+                        p.birthdate = birthdate
+                        updated = True
+                    if country and p.country != country:
+                        p.country = country
+                        updated = True
+                    if updated:
+                        db.commit()
         suggestions.append({
             "id": p.id,
             "name": p.name,
@@ -866,6 +887,8 @@ def suggest_players(
             if not entity_id:
                 continue
             entity = _wikidata_get(entity_id)
+            if not _is_human_sport_entity(entity, sport):
+                continue
             birthdate = _extract_birthdate(entity)
             if not birthdate:
                 continue
@@ -1014,6 +1037,31 @@ def _extract_country(entity: dict) -> Optional[str]:
         except Exception:
             return None
     return None
+
+
+def _is_human_sport_entity(entity: dict, sport: str) -> bool:
+    claims = entity.get("claims", {})
+    # P31: instance of human (Q5)
+    if "P31" in claims:
+        try:
+            if not any(c["mainsnak"]["datavalue"]["value"]["id"] == "Q5" for c in claims["P31"]):
+                return False
+        except Exception:
+            return False
+    # P106: occupation
+    if "P106" in claims:
+        occupation_ids = []
+        for c in claims["P106"]:
+            try:
+                occupation_ids.append(c["mainsnak"]["datavalue"]["value"]["id"])
+            except Exception:
+                continue
+        # tennis player Q10833314, table tennis player Q1700471
+        if sport == "tennis" and "Q10833314" not in occupation_ids:
+            return False
+        if sport == "table-tennis" and "Q1700471" not in occupation_ids:
+            return False
+    return True
 
 
 def resolve_birthdate(name: str, sport: str, db: Session) -> Optional[str]:
