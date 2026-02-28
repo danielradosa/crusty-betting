@@ -822,6 +822,9 @@ def suggest_players(
     db: Session = Depends(get_db)
 ):
     """Suggest players from DB; if not enough, enrich via Wikidata and return DOB."""
+    if not sport:
+        return []
+
     suggestions = []
 
     # 1) DB suggestions
@@ -1048,19 +1051,22 @@ def _is_human_sport_entity(entity: dict, sport: str) -> bool:
                 return False
         except Exception:
             return False
-    # P106: occupation
-    if "P106" in claims:
-        occupation_ids = []
-        for c in claims["P106"]:
-            try:
-                occupation_ids.append(c["mainsnak"]["datavalue"]["value"]["id"])
-            except Exception:
-                continue
-        # tennis player Q10833314, table tennis player Q1700471
-        if sport == "tennis" and "Q10833314" not in occupation_ids:
-            return False
-        if sport == "table-tennis" and "Q1700471" not in occupation_ids:
-            return False
+    else:
+        return False
+    # P106: occupation (required)
+    if "P106" not in claims:
+        return False
+    occupation_ids = []
+    for c in claims["P106"]:
+        try:
+            occupation_ids.append(c["mainsnak"]["datavalue"]["value"]["id"])
+        except Exception:
+            continue
+    # tennis player Q10833314, table tennis player Q1700471
+    if sport == "tennis" and "Q10833314" not in occupation_ids:
+        return False
+    if sport == "table-tennis" and "Q1700471" not in occupation_ids:
+        return False
     return True
 
 
