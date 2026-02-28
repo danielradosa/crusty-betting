@@ -30,3 +30,10 @@ export function resolvePlayer(name: string, sport: string) {
     body: JSON.stringify({ name, sport }),
   })
 }
+
+export function addPlayer(name: string, sport: string, birthdate: string) {
+  return apiRequest<ResolvePlayerResponse>(`/api/v1/players/add`, {
+    method: 'POST',
+    body: JSON.stringify({ name, sport, birthdate }),
+  })
+}

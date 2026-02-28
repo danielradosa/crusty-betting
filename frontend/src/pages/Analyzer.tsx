@@ -26,7 +26,7 @@ import { useAuthStore } from "../hooks/useAuth"
 import type { ApiKey, MatchAnalysisResponse, MatchAnalysisRequest } from "../types"
 import * as apiKeyService from '../services/apiKeyService'
 import { analyzeMatch } from '../services/analysisService'
-import { searchPlayers, resolvePlayer, type PlayerSuggestion } from '../services/playerService'
+import { searchPlayers, resolvePlayer, addPlayer, type PlayerSuggestion } from '../services/playerService'
 import { ApiError } from '../services/apiClient'
 import { getUsageStats, type UsageStats } from '../services/usageService'
 
@@ -199,10 +199,35 @@ export default function Analyzer() {
             if (res.created) message.success('Player added to database')
             else if (res.updated) message.info('Player updated from Wikidata')
             else message.success('DOB resolved')
-
-            // if updated, keep the button label in mind (UI already shows update state)
         } catch (e: any) {
             message.error('Could not resolve DOB')
+        }
+    }
+
+    const addManualPlayer = async (field: 'player1' | 'player2') => {
+        const sport = form.getFieldValue('sport') || 'tennis'
+        const name = form.getFieldValue(field === 'player1' ? 'player1_name' : 'player2_name')
+        const birthdateVal = form.getFieldValue(field === 'player1' ? 'player1_birthdate' : 'player2_birthdate')
+        if (!name || !birthdateVal) {
+            message.error('Enter name and birthdate first')
+            return
+        }
+        try {
+            const res = await addPlayer(name, sport, birthdateVal.format('YYYY-MM-DD'))
+            if (field === 'player1') {
+                setP1HasDbRecord(true)
+                setP1NeedsUpdate(false)
+                setP1BirthLocked(true)
+                p1SelectedNameRef.current = res.name
+            } else {
+                setP2HasDbRecord(true)
+                setP2NeedsUpdate(false)
+                setP2BirthLocked(true)
+                p2SelectedNameRef.current = res.name
+            }
+            message.success('Player added to database')
+        } catch (e: any) {
+            message.error('Could not add player')
         }
     }
 
@@ -361,9 +386,14 @@ export default function Analyzer() {
                                         <Space>
                                             Player 1 Birthdate
                                             {p1BirthLocked && <Text type="secondary">(auto-filled)</Text>}
-                                            {!p1BirthLocked && (
+                                            {!p1BirthLocked && !p1HasDbRecord && form.getFieldValue('player1_name') && form.getFieldValue('player1_birthdate') && (
+                                                <Button size="small" type="link" onClick={() => addManualPlayer('player1')}>
+                                                    Add Player
+                                                </Button>
+                                            )}
+                                            {!p1BirthLocked && p1HasDbRecord && (
                                                 <Button size="small" type="link" onClick={() => resolveBirthdate('player1')}>
-                                                    {p1HasDbRecord ? 'Fetch DOB' : 'Add Player'}
+                                                    Fetch DOB
                                                 </Button>
                                             )}
                                             {p1HasDbRecord && p1NeedsUpdate && (
@@ -402,9 +432,14 @@ export default function Analyzer() {
                                         <Space>
                                             Player 2 Birthdate
                                             {p2BirthLocked && <Text type="secondary">(auto-filled)</Text>}
-                                            {!p2BirthLocked && (
+                                            {!p2BirthLocked && !p2HasDbRecord && form.getFieldValue('player2_name') && form.getFieldValue('player2_birthdate') && (
+                                                <Button size="small" type="link" onClick={() => addManualPlayer('player2')}>
+                                                    Add Player
+                                                </Button>
+                                            )}
+                                            {!p2BirthLocked && p2HasDbRecord && (
                                                 <Button size="small" type="link" onClick={() => resolveBirthdate('player2')}>
-                                                    {p2HasDbRecord ? 'Fetch DOB' : 'Add Player'}
+                                                    Fetch DOB
                                                 </Button>
                                             )}
                                             {p2HasDbRecord && p2NeedsUpdate && (

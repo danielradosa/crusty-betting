@@ -208,6 +208,11 @@ class ResolvePlayerResponse(BaseModel):
     updated: Optional[bool] = False
     created: Optional[bool] = False
 
+class AddPlayerRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis)$')
+    birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
@@ -1035,6 +1040,39 @@ def resolve_player(request: ResolvePlayerRequest, db: Session = Depends(get_db))
         "country": player.country,
         "updated": updated,
         "created": created,
+    }
+
+
+@app.post("/api/v1/players/add", response_model=ResolvePlayerResponse)
+def add_player(request: AddPlayerRequest, db: Session = Depends(get_db)):
+    name = request.name.strip()
+    sport = request.sport.strip()
+    birthdate = request.birthdate.strip()
+    if not name or not sport:
+        raise HTTPException(status_code=400, detail="name and sport are required")
+
+    name_norm = normalize_name(name)
+    existing = db.query(Player).filter(Player.sport == sport, Player.name_norm == name_norm).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Player already exists")
+
+    player = Player(
+        name=name,
+        name_norm=name_norm,
+        birthdate=birthdate,
+        sport=sport,
+    )
+    db.add(player)
+    db.commit()
+    db.refresh(player)
+
+    return {
+        "id": player.id,
+        "name": player.name,
+        "birthdate": player.birthdate,
+        "sport": player.sport,
+        "country": player.country,
+        "created": True,
     }
 
 def normalize_name(name: str) -> str:
