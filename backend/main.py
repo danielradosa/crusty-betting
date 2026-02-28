@@ -868,25 +868,31 @@ def suggest_players(
             name = entity.get("labels", {}).get("en", {}).get("value") or item.get("label")
             if not name:
                 continue
-            name_norm = normalize_name(name)
+            display_name = _strip_diacritics(name).strip()
+            name_norm = normalize_name(display_name)
             if any(normalize_name(s["name"]) == name_norm for s in suggestions):
                 continue
+
+            country = _extract_country(entity)
 
             # Upsert into DB (prefer Wikidata birthdate)
             existing = db.query(Player).filter(Player.sport == sport, Player.name_norm == name_norm).first()
             if existing:
                 if existing.birthdate != birthdate:
                     existing.birthdate = birthdate
-                existing.name = name
+                existing.name = display_name
                 existing.name_norm = name_norm
+                if country:
+                    existing.country = country
                 db.commit()
                 player_id = existing.id
             else:
                 new_player = Player(
-                    name=name.strip(),
+                    name=display_name,
                     name_norm=name_norm,
                     birthdate=birthdate,
                     sport=sport or "",
+                    country=country,
                 )
                 db.add(new_player)
                 db.commit()
@@ -895,10 +901,10 @@ def suggest_players(
 
             suggestions.append({
                 "id": player_id,
-                "name": name,
+                "name": display_name,
                 "birthdate": birthdate,
                 "sport": sport or "",
-                "country": None,
+                "country": country,
                 "source": "wikidata",
             })
 
@@ -983,6 +989,30 @@ def _extract_birthdate(entity: dict) -> Optional[str]:
         try:
             time_str = claims["P569"][0]["mainsnak"]["datavalue"]["value"]["time"]
             return time_str.strip("+")[:10]
+        except Exception:
+            return None
+    return None
+
+
+def _strip_diacritics(value: str) -> str:
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    return value
+
+
+def _extract_country(entity: dict) -> Optional[str]:
+    claims = entity.get("claims", {})
+    if "P27" in claims:
+        try:
+            country_id = claims["P27"][0]["mainsnak"]["datavalue"]["value"]["id"]
+            params = {
+                "action": "wbgetentities",
+                "ids": country_id,
+                "format": "json",
+                "props": "labels",
+            }
+            data = _wikidata_request(params)
+            return data["entities"][country_id]["labels"].get("en", {}).get("value")
         except Exception:
             return None
     return None
