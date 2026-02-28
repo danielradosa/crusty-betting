@@ -204,7 +204,6 @@ class ResolvePlayerResponse(BaseModel):
     name: str
     birthdate: str
     sport: str
-    country: Optional[str] = None
     updated: Optional[bool] = False
     created: Optional[bool] = False
 
@@ -827,7 +826,6 @@ def search_players(
             "name": p.name,
             "birthdate": p.birthdate,
             "sport": p.sport,
-            "country": p.country,
         }
         for p in players
     ]
@@ -861,7 +859,7 @@ def suggest_players(
     db_players = query.limit(10).all()
     for p in db_players:
         # If missing data, refresh from Wikidata (source of truth)
-        if not p.birthdate or not p.country:
+        if not p.birthdate:
             sport_keyword = "tennis player" if p.sport == "tennis" else "table tennis"
             results = _wikidata_search(p.name, sport_keyword)
             if not results:
@@ -871,13 +869,9 @@ def suggest_players(
                 entity = _wikidata_get(entity_id)
                 if _is_human_sport_entity(entity, p.sport):
                     birthdate = _extract_birthdate(entity)
-                    country = _extract_country(entity)
                     updated = False
                     if birthdate and p.birthdate != birthdate:
                         p.birthdate = birthdate
-                        updated = True
-                    if country and p.country != country:
-                        p.country = country
                         updated = True
                     if updated:
                         db.commit()
@@ -886,76 +880,10 @@ def suggest_players(
             "name": p.name,
             "birthdate": p.birthdate,
             "sport": p.sport,
-            "country": p.country,
             "source": "db",
         })
 
-    # 2) Wikidata suggestions (only if needed and query provided)
-    if q and len(suggestions) < 10:
-        sport_keyword = "tennis player" if sport == "tennis" else "table tennis"
-        results = _wikidata_search(q, sport_keyword)
-        if not results:
-            results = _wikidata_search(q, "")
-
-        for item in results:
-            if len(suggestions) >= 10:
-                break
-            # filter by sport keyword in description when possible
-            desc = (item.get("description") or "").lower()
-            if sport_keyword and sport_keyword not in desc:
-                continue
-            entity_id = item.get("id")
-            if not entity_id:
-                continue
-            entity = _wikidata_get(entity_id)
-            if not _is_human_sport_entity(entity, sport):
-                continue
-            birthdate = _extract_birthdate(entity)
-            if not birthdate:
-                continue
-            name = entity.get("labels", {}).get("en", {}).get("value") or item.get("label")
-            if not name:
-                continue
-            display_name = name.strip()
-            name_norm = normalize_name(display_name)
-            if any(normalize_name(s["name"]) == name_norm for s in suggestions):
-                continue
-
-            country = _extract_country(entity)
-
-            # Upsert into DB (prefer Wikidata birthdate)
-            existing = db.query(Player).filter(Player.sport == sport, Player.name_norm == name_norm).first()
-            if existing:
-                if existing.birthdate != birthdate:
-                    existing.birthdate = birthdate
-                existing.name = display_name
-                existing.name_norm = name_norm
-                if country:
-                    existing.country = country
-                db.commit()
-                player_id = existing.id
-            else:
-                new_player = Player(
-                    name=display_name,
-                    name_norm=name_norm,
-                    birthdate=birthdate,
-                    sport=sport or "",
-                    country=country,
-                )
-                db.add(new_player)
-                db.commit()
-                db.refresh(new_player)
-                player_id = new_player.id
-
-            suggestions.append({
-                "id": player_id,
-                "name": display_name,
-                "birthdate": birthdate,
-                "sport": sport or "",
-                "country": country,
-                "source": "wikidata",
-            })
-
+    # 2) Wikidata suggestions disabled — DB only
     return suggestions
 
 @app.get("/api/v1/players/{player_id}")
@@ -969,8 +897,7 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
         "id": player.id,
         "name": player.name,
         "birthdate": player.birthdate,
-        "sport": player.sport,
-        "country": player.country
+        "sport": player.sport
     }
 
 
@@ -1000,17 +927,12 @@ def resolve_player(request: ResolvePlayerRequest, db: Session = Depends(get_db))
     if not birthdate:
         raise HTTPException(status_code=404, detail="Birthdate not found")
 
-    country = _extract_country(entity)
-
     updated = False
     created = False
 
     if existing:
         if existing.birthdate != birthdate:
             existing.birthdate = birthdate
-            updated = True
-        if country and existing.country != country:
-            existing.country = country
             updated = True
         if existing.name != name:
             existing.name = name
@@ -1025,7 +947,6 @@ def resolve_player(request: ResolvePlayerRequest, db: Session = Depends(get_db))
             name_norm=name_norm,
             birthdate=birthdate,
             sport=sport,
-            country=country,
         )
         db.add(player)
         db.commit()
@@ -1037,7 +958,6 @@ def resolve_player(request: ResolvePlayerRequest, db: Session = Depends(get_db))
         "name": player.name,
         "birthdate": player.birthdate,
         "sport": player.sport,
-        "country": player.country,
         "updated": updated,
         "created": created,
     }
@@ -1071,7 +991,6 @@ def add_player(request: AddPlayerRequest, db: Session = Depends(get_db)):
         "name": player.name,
         "birthdate": player.birthdate,
         "sport": player.sport,
-        "country": player.country,
         "created": True,
     }
 
@@ -1139,24 +1058,6 @@ def _extract_birthdate(entity: dict) -> Optional[str]:
         try:
             time_str = claims["P569"][0]["mainsnak"]["datavalue"]["value"]["time"]
             return time_str.strip("+")[:10]
-        except Exception:
-            return None
-    return None
-
-
-def _extract_country(entity: dict) -> Optional[str]:
-    claims = entity.get("claims", {})
-    if "P27" in claims:
-        try:
-            country_id = claims["P27"][0]["mainsnak"]["datavalue"]["value"]["id"]
-            params = {
-                "action": "wbgetentities",
-                "ids": country_id,
-                "format": "json",
-                "props": "labels",
-            }
-            data = _wikidata_request(params)
-            return data["entities"][country_id]["labels"].get("en", {}).get("value")
         except Exception:
             return None
     return None
@@ -1249,7 +1150,6 @@ def seed_players(
         birthdate = (p.get("birthdate") or "").strip() if seed_use_birthdates else ""
         if not birthdate:
             birthdate = None
-        country = (p.get("country") or "").strip() or None
 
         name_norm = normalize_name(name)
 
@@ -1261,12 +1161,7 @@ def seed_players(
                 "name_norm": name_norm,
                 "birthdate": birthdate,
                 "sport": sport,
-                "country": country,
             }
-        else:
-            # if existing is missing country and new has it, fill it
-            if not deduped[k].get("country") and country:
-                deduped[k]["country"] = country
 
     rows = list(deduped.values())
 
@@ -1278,8 +1173,6 @@ def seed_players(
         "name": stmt.excluded.name,
         # only overwrite birthdate if seed provides a non-empty value
         "birthdate": func.coalesce(func.nullif(stmt.excluded.birthdate, ""), Player.birthdate),
-        # only update country if new one is not null
-        "country": stmt.excluded.country,
     }
 
     stmt = stmt.on_conflict_do_update(

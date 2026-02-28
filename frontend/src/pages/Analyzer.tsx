@@ -131,7 +131,6 @@ export default function Analyzer() {
                     <span>{p.name}</span>
                     <span style={{ opacity: 0.65, fontSize: 12 }}>
                         {p.birthdate ? dayjs(p.birthdate, 'YYYY-MM-DD').format(dateFormat) : ''}
-                        {p.country ? ` • ${p.country}` : ""}
                     </span>
                 </div>
             ),
@@ -298,7 +297,7 @@ export default function Analyzer() {
 
             const data = await analyzeMatch(payload, apiKey)
             setResult(data)
-            message.success("Analysis complete ✅")
+            message.success("Analysis complete")
             if (accessToken) {
                 const stats = await getUsageStats(accessToken)
                 setUsage(stats)

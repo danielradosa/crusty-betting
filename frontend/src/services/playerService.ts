@@ -5,7 +5,6 @@ export type PlayerSuggestion = {
   name: string
   birthdate: string
   sport: string
-  country?: string | null
   source?: 'db' | 'wikidata'
 }
 
@@ -19,7 +18,6 @@ export type ResolvePlayerResponse = {
   name: string
   birthdate: string
   sport: string
-  country?: string | null
   updated?: boolean
   created?: boolean
 }
