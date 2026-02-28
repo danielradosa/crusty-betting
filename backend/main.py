@@ -868,7 +868,7 @@ def suggest_players(
             name = entity.get("labels", {}).get("en", {}).get("value") or item.get("label")
             if not name:
                 continue
-            display_name = _strip_diacritics(name).strip()
+            display_name = name.strip()
             name_norm = normalize_name(display_name)
             if any(normalize_name(s["name"]) == name_norm for s in suggestions):
                 continue
@@ -992,12 +992,6 @@ def _extract_birthdate(entity: dict) -> Optional[str]:
         except Exception:
             return None
     return None
-
-
-def _strip_diacritics(value: str) -> str:
-    value = unicodedata.normalize("NFKD", value)
-    value = "".join(c for c in value if not unicodedata.combining(c))
-    return value
 
 
 def _extract_country(entity: dict) -> Optional[str]:
