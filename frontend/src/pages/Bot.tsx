@@ -102,7 +102,7 @@ type AnalyzePayload = {
   player2_name: string
   player2_birthdate: string
   match_date: string
-  sport: "tennis" | "table-tennis" | "boxing" | "mma" | "basketball" | "football"
+  sport: "tennis" | "table-tennis"
 }
 
 async function analyzeMatch(payload: AnalyzePayload) {

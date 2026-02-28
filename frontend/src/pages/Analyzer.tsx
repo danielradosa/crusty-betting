@@ -21,6 +21,7 @@ import {
 import { InfoCircleOutlined, DotChartOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
 import { Link } from 'react-router-dom'
+import { getLocaleDateFormat } from '../utils/dateFormat'
 import { useAuthStore } from "../hooks/useAuth"
 import type { ApiKey, MatchAnalysisResponse, MatchAnalysisRequest } from "../types"
 import * as apiKeyService from '../services/apiKeyService'
@@ -45,8 +46,6 @@ type AnalyzeFormValues = {
 const sportOptions = [
     { value: "tennis", label: "Tennis" },
     { value: "table-tennis", label: "Table Tennis" },
-    { value: "boxing", label: "Boxing" },
-    { value: "mma", label: "MMA" },
 ]
 
 export default function Analyzer() {
@@ -54,6 +53,7 @@ export default function Analyzer() {
     const { accessToken } = useAuthStore()
     const screens = useBreakpoint()
     const isMobile = !screens.md
+    const dateFormat = getLocaleDateFormat()
 
     const [keys, setKeys] = useState<ApiKey[]>([])
     const [keysLoading, setKeysLoading] = useState(true)
@@ -319,7 +319,7 @@ export default function Analyzer() {
                                     name="player1_birthdate"
                                     rules={[{ required: true }]}
                                 >
-                                    <DatePicker format='L' inputReadOnly style={{ width: "100%" }} disabled={p1BirthLocked} />
+                                    <DatePicker format={dateFormat} inputReadOnly style={{ width: "100%" }} disabled={p1BirthLocked} />
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -350,13 +350,13 @@ export default function Analyzer() {
                                     name="player2_birthdate"
                                     rules={[{ required: true }]}
                                 >
-                                    <DatePicker format='L' inputReadOnly style={{ width: "100%" }} disabled={p2BirthLocked} />
+                                    <DatePicker format={dateFormat} inputReadOnly style={{ width: "100%" }} disabled={p2BirthLocked} />
                                 </Form.Item>
                             </Col>
                         </Row>
 
                         <Form.Item label="Match Date" name="match_date" rules={[{ required: true }]}>
-                            <DatePicker format='L' inputReadOnly style={{ width: "100%" }} />
+                            <DatePicker format={dateFormat} inputReadOnly style={{ width: "100%" }} />
                         </Form.Item>
 
                         {error && (

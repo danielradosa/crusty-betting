@@ -21,6 +21,7 @@ import { MatchAnalysisRequest, DemoMatchAnalysisResponse } from '../../types'
 import dayjs from 'dayjs'
 import { demoAnalyze } from '../../services/analysisService'
 import { ApiError } from '../../services/apiClient'
+import { getLocaleDateFormat } from '../../utils/dateFormat'
 
 const { Option } = Select
 const { Title, Text } = Typography
@@ -28,8 +29,6 @@ const { Title, Text } = Typography
 const sports = [
   { value: 'tennis', label: '🎾 Tennis' },
   { value: 'table-tennis', label: '🏓 Table Tennis' },
-  { value: 'boxing', label: '🥊 Boxing' },
-  { value: 'mma', label: '🥋 MMA' },
 ]
 
 function DemoAnalyzer() {
@@ -81,6 +80,8 @@ function DemoAnalyzer() {
     }
   }
 
+  const dateFormat = getLocaleDateFormat()
+
   return (
     <Card title={<><DotChartOutlined /> Try Demo Analysis</>}>
       <Form
@@ -100,7 +101,7 @@ function DemoAnalyzer() {
           </Col>
           <Col xs={24} md={12}>
             <Form.Item name='player1_birthdate' label='Player 1 Birthdate' rules={[{ required: true }]}>
-              <DatePicker format='L' inputReadOnly style={{ width: '100%' }} />
+              <DatePicker format={dateFormat} inputReadOnly style={{ width: '100%' }} />
             </Form.Item>
           </Col>
 
@@ -111,13 +112,13 @@ function DemoAnalyzer() {
           </Col>
           <Col xs={24} md={12}>
             <Form.Item name='player2_birthdate' label='Player 2 Birthdate' rules={[{ required: true }]}>
-              <DatePicker format='L' inputReadOnly style={{ width: '100%' }} />
+              <DatePicker format={dateFormat} inputReadOnly style={{ width: '100%' }} />
             </Form.Item>
           </Col>
 
           <Col xs={24} md={12}>
             <Form.Item name='match_date' label='Match Date' rules={[{ required: true }]}>
-              <DatePicker format='L' inputReadOnly style={{ width: '100%' }} />
+              <DatePicker format={dateFormat} inputReadOnly style={{ width: '100%' }} />
             </Form.Item>
           </Col>
 
@@ -168,7 +169,9 @@ function DemoAnalyzer() {
 
           <Descriptions title='Match Details' bordered column={1} size='small'>
             <Descriptions.Item label='Sport'>{result.sport}</Descriptions.Item>
-            <Descriptions.Item label='Match Date'>{result.match_date}</Descriptions.Item>
+            <Descriptions.Item label='Match Date'>
+              {result.match_date ? dayjs(result.match_date).format(dateFormat) : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label='Recommendation'>{result.recommendation}</Descriptions.Item>
             <Descriptions.Item label='Bet Size'>{result.bet_size}</Descriptions.Item>
           </Descriptions>

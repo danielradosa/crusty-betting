@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles # type: ignore
 from fastapi.responses import FileResponse, JSONResponse, Response # type: ignore
 from pydantic import BaseModel, EmailStr, Field # type: ignore
 from sqlalchemy.orm import Session # type: ignore
-from sqlalchemy import or_ # type: ignore
+from sqlalchemy import or_, func # type: ignore
 from datetime import date, datetime, timedelta
 from fastapi import WebSocket, WebSocketDisconnect # type: ignore
 from typing import List, Optional
@@ -12,6 +12,8 @@ import os
 from collections import defaultdict
 from sqlalchemy.dialects.postgresql import insert as pg_insert # type: ignore
 import unicodedata, re
+from urllib.request import Request as UrlRequest, urlopen
+from urllib.parse import urlencode
 
 import json
 
@@ -164,7 +166,7 @@ class MatchAnalysisRequest(BaseModel):
     player2_name: str = Field(..., min_length=1, max_length=100)
     player2_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
     match_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
-    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
+    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis)$')
 
 class MatchAnalysisResponse(BaseModel):
     match_date: str
@@ -191,7 +193,7 @@ class DemoRequest(BaseModel):
     player2_name: str = Field(..., min_length=1, max_length=100)
     player2_birthdate: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
     match_date: str = Field(..., pattern=r'^\d{4}-\d{2}-\d{2}$')
-    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis|boxing|mma|basketball|football)$')
+    sport: str = Field(default="tennis", pattern=r'^(tennis|table-tennis)$')
 
 # Startup event
 @app.on_event("startup")
@@ -812,6 +814,96 @@ def search_players(
         for p in players
     ]
 
+
+@app.get("/api/v1/players/suggest")
+def suggest_players(
+    q: str = "",
+    sport: str = "",
+    db: Session = Depends(get_db)
+):
+    """Suggest players from DB; if not enough, enrich via Wikidata and return DOB."""
+    suggestions = []
+
+    # 1) DB suggestions
+    query = db.query(Player)
+    if sport:
+        query = query.filter(Player.sport == sport)
+    if q:
+        q_raw = q.strip()
+        q_norm = normalize_name(q_raw)
+        query = query.filter(
+            or_(
+                Player.name_norm.ilike(f"%{q_norm}%"),
+                Player.name.ilike(f"%{q_raw}%"),
+            )
+        )
+    db_players = query.limit(10).all()
+    for p in db_players:
+        suggestions.append({
+            "id": p.id,
+            "name": p.name,
+            "birthdate": p.birthdate,
+            "sport": p.sport,
+            "country": p.country,
+            "source": "db",
+        })
+
+    # 2) Wikidata suggestions (only if needed and query provided)
+    if q and len(suggestions) < 10:
+        sport_keyword = "tennis player" if sport == "tennis" else "table tennis"
+        results = _wikidata_search(q, sport_keyword)
+        if not results:
+            results = _wikidata_search(q, "")
+
+        for item in results:
+            if len(suggestions) >= 10:
+                break
+            entity_id = item.get("id")
+            if not entity_id:
+                continue
+            entity = _wikidata_get(entity_id)
+            birthdate = _extract_birthdate(entity)
+            if not birthdate:
+                continue
+            name = entity.get("labels", {}).get("en", {}).get("value") or item.get("label")
+            if not name:
+                continue
+            name_norm = normalize_name(name)
+            if any(normalize_name(s["name"]) == name_norm for s in suggestions):
+                continue
+
+            # Upsert into DB (prefer Wikidata birthdate)
+            existing = db.query(Player).filter(Player.sport == sport, Player.name_norm == name_norm).first()
+            if existing:
+                if existing.birthdate != birthdate:
+                    existing.birthdate = birthdate
+                existing.name = name
+                existing.name_norm = name_norm
+                db.commit()
+                player_id = existing.id
+            else:
+                new_player = Player(
+                    name=name.strip(),
+                    name_norm=name_norm,
+                    birthdate=birthdate,
+                    sport=sport or "",
+                )
+                db.add(new_player)
+                db.commit()
+                db.refresh(new_player)
+                player_id = new_player.id
+
+            suggestions.append({
+                "id": player_id,
+                "name": name,
+                "birthdate": birthdate,
+                "sport": sport or "",
+                "country": None,
+                "source": "wikidata",
+            })
+
+    return suggestions
+
 @app.get("/api/v1/players/{player_id}")
 def get_player(player_id: int, db: Session = Depends(get_db)):
     """Get a specific player by ID"""
@@ -836,6 +928,98 @@ def normalize_name(name: str) -> str:
     name = re.sub(r"\s+", " ", name).strip()
     return name
 
+
+def _valid_birthdate(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        raise HTTPException(status_code=400, detail="birthdate must be YYYY-MM-DD")
+    return value
+
+
+def _wikidata_request(params: dict) -> dict:
+    url = "https://www.wikidata.org/w/api.php?" + urlencode(params)
+    req = UrlRequest(url, headers={"User-Agent": "sportology/1.0"})
+    return json.loads(urlopen(req).read().decode())
+
+
+def _wikidata_search(name: str, sport_keyword: str) -> list:
+    params = {
+        "action": "wbsearchentities",
+        "search": f"{name} {sport_keyword}" if sport_keyword else name,
+        "language": "en",
+        "format": "json",
+        "limit": 5,
+    }
+    data = _wikidata_request(params)
+    return data.get("search", [])
+
+
+def _wikidata_get(entity_id: str) -> dict:
+    params = {
+        "action": "wbgetentities",
+        "ids": entity_id,
+        "format": "json",
+        "props": "claims|descriptions|labels",
+    }
+    data = _wikidata_request(params)
+    return data.get("entities", {}).get(entity_id, {})
+
+
+def _pick_entity(search_results: list, sport_keyword: str) -> Optional[str]:
+    for item in search_results:
+        desc = (item.get("description") or "").lower()
+        if sport_keyword in desc:
+            return item.get("id")
+    return search_results[0].get("id") if search_results else None
+
+
+def _extract_birthdate(entity: dict) -> Optional[str]:
+    claims = entity.get("claims", {})
+    if "P569" in claims:
+        try:
+            time_str = claims["P569"][0]["mainsnak"]["datavalue"]["value"]["time"]
+            return time_str.strip("+")[:10]
+        except Exception:
+            return None
+    return None
+
+
+def resolve_birthdate(name: str, sport: str, db: Session) -> Optional[str]:
+    name_norm = normalize_name(name)
+    player = db.query(Player).filter(Player.sport == sport, Player.name_norm == name_norm).first()
+    if player and player.birthdate:
+        return player.birthdate
+
+    sport_keyword = "tennis player" if sport == "tennis" else "table tennis"
+    results = _wikidata_search(name, sport_keyword)
+    if not results:
+        results = _wikidata_search(name, "")
+    entity_id = _pick_entity(results, sport_keyword)
+    if not entity_id:
+        return None
+
+    entity = _wikidata_get(entity_id)
+    birthdate = _extract_birthdate(entity)
+    if not birthdate:
+        return None
+
+    if player:
+        player.birthdate = birthdate
+    else:
+        player = Player(
+            name=name.strip(),
+            name_norm=name_norm,
+            birthdate=birthdate,
+            sport=sport,
+        )
+        db.add(player)
+    db.commit()
+    return birthdate
+
 # Seed players data (run once)
 @app.post("/admin/seed-players")
 def seed_players(
@@ -851,196 +1035,18 @@ def seed_players(
         raise HTTPException(status_code=401, detail="Invalid admin key")
     
     players = [
-        # Tennis - ATP Top 100 + more
-        {"name": "Novak Djokovic", "birthdate": "1987-05-22", "sport": "tennis", "country": "Serbia"},
-        {"name": "Carlos Alcaraz", "birthdate": "2003-05-05", "sport": "tennis", "country": "Spain"},
-        {"name": "Jannik Sinner", "birthdate": "2001-08-16", "sport": "tennis", "country": "Italy"},
-        {"name": "Daniil Medvedev", "birthdate": "1996-02-11", "sport": "tennis", "country": "Russia"},
-        {"name": "Alexander Zverev", "birthdate": "1997-04-20", "sport": "tennis", "country": "Germany"},
-        {"name": "Rafael Nadal", "birthdate": "1986-06-03", "sport": "tennis", "country": "Spain"},
-        {"name": "Andrey Rublev", "birthdate": "1997-10-20", "sport": "tennis", "country": "Russia"},
-        {"name": "Holger Rune", "birthdate": "2003-04-29", "sport": "tennis", "country": "Denmark"},
-        {"name": "Hubert Hurkacz", "birthdate": "1997-02-11", "sport": "tennis", "country": "Poland"},
-        {"name": "Casper Ruud", "birthdate": "1998-12-22", "sport": "tennis", "country": "Norway"},
-        {"name": "Stefanos Tsitsipas", "birthdate": "1998-08-12", "sport": "tennis", "country": "Greece"},
-        {"name": "Taylor Fritz", "birthdate": "1997-10-28", "sport": "tennis", "country": "USA"},
-        {"name": "Grigor Dimitrov", "birthdate": "1991-05-16", "sport": "tennis", "country": "Bulgaria"},
-        {"name": "Tommy Paul", "birthdate": "1997-05-17", "sport": "tennis", "country": "USA"},
-        {"name": "Karen Khachanov", "birthdate": "1996-05-21", "sport": "tennis", "country": "Russia"},
-        {"name": "Ben Shelton", "birthdate": "2002-10-09", "sport": "tennis", "country": "USA"},
-        {"name": "Frances Tiafoe", "birthdate": "1998-01-20", "sport": "tennis", "country": "USA"},
-        {"name": "Frances Tiafoe", "birthdate": "1998-01-20", "sport": "tennis", "country": "USA"},
-        {"name": "Felix Auger-Aliassime", "birthdate": "2000-08-08", "sport": "tennis", "country": "Canada"},
-        {"name": "Ugo Humbert", "birthdate": "1998-06-26", "sport": "tennis", "country": "France"},
-        {"name": "Sebastian Korda", "birthdate": "2000-07-05", "sport": "tennis", "country": "USA"},
-        {"name": "Adrian Mannarino", "birthdate": "1988-06-29", "sport": "tennis", "country": "France"},
-        {"name": "Nicolas Jarry", "birthdate": "1995-10-11", "sport": "tennis", "country": "Chile"},
-        {"name": "Tallon Griekspoor", "birthdate": "1996-07-02", "sport": "tennis", "country": "Netherlands"},
-        {"name": "Lorenzo Musetti", "birthdate": "2002-03-03", "sport": "tennis", "country": "Italy"},
-        {"name": "Francisco Cerundolo", "birthdate": "1998-08-12", "sport": "tennis", "country": "Argentina"},
-        {"name": "Alejandro Davidovich Fokina", "birthdate": "1999-06-05", "sport": "tennis", "country": "Spain"},
-        {"name": "Jordan Thompson", "birthdate": "1994-04-20", "sport": "tennis", "country": "Australia"},
-        {"name": "Jiri Lehecka", "birthdate": "2001-11-08", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Sebastian Baez", "birthdate": "2001-12-28", "sport": "tennis", "country": "Argentina"},
-        {"name": "Roman Safiullin", "birthdate": "1997-08-07", "sport": "tennis", "country": "Russia"},
-        {"name": "Gael Monfils", "birthdate": "1986-09-01", "sport": "tennis", "country": "France"},
-        {"name": "Valentin Vacherot", "birthdate": "1996-04-05", "sport": "tennis", "country": "Monaco"},
-        {"name": "Kei Nishikori", "birthdate": "1989-12-29", "sport": "tennis", "country": "Japan"},
-        {"name": "Milos Raonic", "birthdate": "1990-12-27", "sport": "tennis", "country": "Canada"},
-        {"name": "Denis Shapovalov", "birthdate": "1999-04-15", "sport": "tennis", "country": "Canada"},
-        {"name": "Roberto Bautista Agut", "birthdate": "1988-04-14", "sport": "tennis", "country": "Spain"},
-        {"name": "Marcos Giron", "birthdate": "1993-07-24", "sport": "tennis", "country": "USA"},
-        {"name": "Christopher Eubanks", "birthdate": "1996-05-05", "sport": "tennis", "country": "USA"},
-        {"name": "Mackenzie McDonald", "birthdate": "1995-04-16", "sport": "tennis", "country": "USA"},
-        {"name": "Arthur Fils", "birthdate": "2004-06-12", "sport": "tennis", "country": "France"},
-        {"name": "Giovanni Mpetshi Perricard", "birthdate": "2003-07-08", "sport": "tennis", "country": "France"},
         
-        # Tennis - WTA Top Players
-        {"name": "Iga Swiatek", "birthdate": "2001-05-31", "sport": "tennis", "country": "Poland"},
-        {"name": "Aryna Sabalenka", "birthdate": "1998-05-05", "sport": "tennis", "country": "Belarus"},
-        {"name": "Coco Gauff", "birthdate": "2004-03-13", "sport": "tennis", "country": "USA"},
-        {"name": "Elena Rybakina", "birthdate": "1999-06-17", "sport": "tennis", "country": "Kazakhstan"},
-        {"name": "Jessica Pegula", "birthdate": "1994-02-24", "sport": "tennis", "country": "USA"},
-        {"name": "Marketa Vondrousova", "birthdate": "1999-06-28", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Maria Sakkari", "birthdate": "1995-07-25", "sport": "tennis", "country": "Greece"},
-        {"name": "Ons Jabeur", "birthdate": "1994-08-28", "sport": "tennis", "country": "Tunisia"},
-        {"name": "Barbora Krejcikova", "birthdate": "1995-12-18", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Jelena Ostapenko", "birthdate": "1997-06-08", "sport": "tennis", "country": "Latvia"},
-        {"name": "Beatriz Haddad Maia", "birthdate": "1996-05-30", "sport": "tennis", "country": "Brazil"},
-        {"name": "Liudmila Samsonova", "birthdate": "1998-11-11", "sport": "tennis", "country": "Russia"},
-        {"name": "Victoria Azarenka", "birthdate": "1989-07-31", "sport": "tennis", "country": "Belarus"},
-        {"name": "Veronika Kudermetova", "birthdate": "1997-04-24", "sport": "tennis", "country": "Russia"},
-        {"name": "Petra Kvitova", "birthdate": "1990-03-08", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Elina Svitolina", "birthdate": "1994-09-12", "sport": "tennis", "country": "Ukraine"},
-        {"name": "Anastasia Pavlyuchenkova", "birthdate": "1991-07-03", "sport": "tennis", "country": "Russia"},
-        {"name": "Donna Vekic", "birthdate": "1996-06-28", "sport": "tennis", "country": "Croatia"},
-        {"name": "Linda Noskova", "birthdate": "2004-11-17", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Martina Trevisan", "birthdate": "1993-11-03", "sport": "tennis", "country": "Italy"},
-        {"name": "Elise Mertens", "birthdate": "1994-11-17", "sport": "tennis", "country": "Belgium"},
-        {"name": "Karolina Muchova", "birthdate": "1996-08-21", "sport": "tennis", "country": "Czech Republic"},
-        {"name": "Madison Keys", "birthdate": "1995-02-17", "sport": "tennis", "country": "USA"},
-        {"name": " Danielle Collins", "birthdate": "1993-12-13", "sport": "tennis", "country": "USA"},
-        {"name": "Qinwen Zheng", "birthdate": "2002-10-08", "sport": "tennis", "country": "China"},
-        {"name": "Anna Kalinskaya", "birthdate": "1998-12-02", "sport": "tennis", "country": "Russia"},
-        {"name": "Sorana Cirstea", "birthdate": "1990-04-07", "sport": "tennis", "country": "Romania"},
-        {"name": "Anhelina Kalinina", "birthdate": "1997-02-07", "sport": "tennis", "country": "Ukraine"},
-        {"name": "Varvara Gracheva", "birthdate": "2000-08-02", "sport": "tennis", "country": "France"},
-        {"name": "Mirra Andreeva", "birthdate": "2007-04-29", "sport": "tennis", "country": "Russia"},
-        
-        # Table Tennis - Men's Top 100
-        {"name": "Fan Zhendong", "birthdate": "1997-01-22", "sport": "table-tennis", "country": "China"},
-        {"name": "Ma Long", "birthdate": "1988-10-20", "sport": "table-tennis", "country": "China"},
-        {"name": "Wang Chuqin", "birthdate": "2000-05-11", "sport": "table-tennis", "country": "China"},
-        {"name": "Tomokazu Harimoto", "birthdate": "2003-06-27", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Lin Shidong", "birthdate": "2005-04-20", "sport": "table-tennis", "country": "China"},
-        {"name": "Liang Jingkun", "birthdate": "1996-10-20", "sport": "table-tennis", "country": "China"},
-        {"name": "Hugo Calderano", "birthdate": "1996-06-22", "sport": "table-tennis", "country": "Brazil"},
-        {"name": "Felix Lebrun", "birthdate": "2006-09-12", "sport": "table-tennis", "country": "France"},
-        {"name": "Alexis Lebrun", "birthdate": "2003-08-27", "sport": "table-tennis", "country": "France"},
-        {"name": "Dimitrij Ovtcharov", "birthdate": "1988-09-02", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Lin Gaoyuan", "birthdate": "1995-03-19", "sport": "table-tennis", "country": "China"},
-        {"name": "Darko Jorgic", "birthdate": "1998-07-30", "sport": "table-tennis", "country": "Slovenia"},
-        {"name": "Truls Moregard", "birthdate": "2002-02-16", "sport": "table-tennis", "country": "Sweden"},
-        {"name": "Patrick Franziska", "birthdate": "1992-06-11", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Quadri Aruna", "birthdate": "1988-08-09", "sport": "table-tennis", "country": "Nigeria"},
-        {"name": "Marcos Freitas", "birthdate": "1986-04-08", "sport": "table-tennis", "country": "Portugal"},
-        {"name": "Anton Kallberg", "birthdate": "1997-08-16", "sport": "table-tennis", "country": "Sweden"},
-        {"name": "Omar Assar", "birthdate": "1991-07-22", "sport": "table-tennis", "country": "Egypt"},
-        {"name": "Simon Gauzy", "birthdate": "1994-10-25", "sport": "table-tennis", "country": "France"},
-        {"name": "Kristian Karlsson", "birthdate": "1991-08-06", "sport": "table-tennis", "country": "Sweden"},
-        {"name": "Mattias Falck", "birthdate": "1991-09-07", "sport": "table-tennis", "country": "Sweden"},
-        {"name": "Jonathan Groth", "birthdate": "1992-11-07", "sport": "table-tennis", "country": "Denmark"},
-        {"name": "Liam Pitchford", "birthdate": "1993-07-12", "sport": "table-tennis", "country": "England"},
-        {"name": "Andrej Gacina", "birthdate": "1986-05-21", "sport": "table-tennis", "country": "Croatia"},
-        {"name": "Wong Chun Ting", "birthdate": "1991-09-28", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Ho Kwan Kit", "birthdate": "1997-04-20", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Lee Sang Su", "birthdate": "1990-08-13", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Jang Woojin", "birthdate": "1995-09-10", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "An Jaehyun", "birthdate": "1999-12-25", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Cho Seungmin", "birthdate": "1998-08-21", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Lim Jonghoon", "birthdate": "1997-01-22", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Chuang Chih-Yuan", "birthdate": "1981-04-02", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Lin Yun-Ju", "birthdate": "2001-08-17", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Kao Cheng-Jui", "birthdate": "2000-06-14", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Yoshimura Maharu", "birthdate": "1993-08-03", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Niwa Koki", "birthdate": "1994-12-10", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Mizutani Jun", "birthdate": "1989-06-09", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Togami Shunsuke", "birthdate": "2001-08-24", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Sato Hiromi", "birthdate": "2001-10-04", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Oikawa Mizuki", "birthdate": "1996-04-22", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Kizukuri Yuto", "birthdate": "2000-08-22", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Uda Yukiya", "birthdate": "2001-11-02", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Yoshiyama Ryoichi", "birthdate": "2004-03-14", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Ishiyama Takuto", "birthdate": "1996-10-21", "sport": "table-tennis", "country": "Japan"},
-        
-        # Table Tennis - Women's Top 100
-        {"name": "Sun Yingsha", "birthdate": "2000-11-04", "sport": "table-tennis", "country": "China"},
-        {"name": "Chen Meng", "birthdate": "1994-01-15", "sport": "table-tennis", "country": "China"},
-        {"name": "Wang Manyu", "birthdate": "1999-02-09", "sport": "table-tennis", "country": "China"},
-        {"name": "Wang Yidi", "birthdate": "1997-02-14", "sport": "table-tennis", "country": "China"},
-        {"name": "Chen Xingtong", "birthdate": "1997-05-27", "sport": "table-tennis", "country": "China"},
-        {"name": "Qian Tianyi", "birthdate": "2000-01-23", "sport": "table-tennis", "country": "China"},
-        {"name": "Zhang Rui", "birthdate": "1997-01-23", "sport": "table-tennis", "country": "China"},
-        {"name": "Kuai Man", "birthdate": "2004-02-07", "sport": "table-tennis", "country": "China"},
-        {"name": "He Zhuojia", "birthdate": "1998-10-23", "sport": "table-tennis", "country": "China"},
-        {"name": "Shi Xunyao", "birthdate": "2001-09-17", "sport": "table-tennis", "country": "China"},
-        {"name": "Fan Siqi", "birthdate": "1999-12-21", "sport": "table-tennis", "country": "China"},
-        {"name": "Liu Weishan", "birthdate": "1999-03-10", "sport": "table-tennis", "country": "China"},
-        {"name": "Mima Ito", "birthdate": "2000-10-21", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Hina Hayata", "birthdate": "2000-07-07", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Miu Hirano", "birthdate": "2000-04-14", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Kasumi Ishikawa", "birthdate": "1993-02-23", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Sakura Mori", "birthdate": "1996-04-10", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Saki Shibata", "birthdate": "1997-06-05", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Hitomi Sato", "birthdate": "1997-04-18", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Miyu Kato", "birthdate": "1999-04-14", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Jeoung Youngsik", "birthdate": "1992-01-20", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Shin Yubin", "birthdate": "2004-07-05", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Jeon Jihee", "birthdate": "1992-10-28", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Choi Hyojoo", "birthdate": "1998-06-11", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Lee ZIon", "birthdate": "1995-12-14", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Yang Haeun", "birthdate": "1994-02-25", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Kim Hayeong", "birthdate": "2003-09-12", "sport": "table-tennis", "country": "South Korea"},
-        {"name": "Cheng I-Ching", "birthdate": "1992-02-15", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Chen Szu-Yu", "birthdate": "1997-08-01", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Cheng Hsien-Tzu", "birthdate": "1993-09-29", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Liu Hsing-Yin", "birthdate": "1992-10-06", "sport": "table-tennis", "country": "Taiwan"},
-        {"name": "Lee Ho Ching", "birthdate": "1992-11-24", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Doo Hoi Kem", "birthdate": "1996-11-27", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Ng Wing Nam", "birthdate": "1992-08-17", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Zhu Chengzhu", "birthdate": "1997-07-31", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Soo Wai Yam Minnie", "birthdate": "1998-06-17", "sport": "table-tennis", "country": "Hong Kong"},
-        {"name": "Liu Jia", "birthdate": "1982-02-09", "sport": "table-tennis", "country": "Austria"},
-        {"name": "Sofia Polcanova", "birthdate": "1994-09-03", "sport": "table-tennis", "country": "Austria"},
-        {"name": "Han Ying", "birthdate": "1983-04-29", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Nina Mittelham", "birthdate": "1996-11-23", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Sabine Winter", "birthdate": "1992-09-27", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Petrissa Solja", "birthdate": "1994-03-11", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Shan Xiaona", "birthdate": "1989-02-12", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Yuan Wan", "birthdate": "1997-11-23", "sport": "table-tennis", "country": "Germany"},
-        {"name": "Bernadette Szocs", "birthdate": "1995-03-05", "sport": "table-tennis", "country": "Romania"},
-        {"name": "Elizabeta Samara", "birthdate": "1989-04-15", "sport": "table-tennis", "country": "Romania"},
-        {"name": "Daniela Dodean", "birthdate": "1988-01-13", "sport": "table-tennis", "country": "Romania"},
-        {"name": "Ivor Martina Ema", "birthdate": "1995-06-05", "sport": "table-tennis", "country": "Romania"},
-        {"name": "Georgina Pota", "birthdate": "1985-01-13", "sport": "table-tennis", "country": "Hungary"},
-        {"name": "Dora Madarasz", "birthdate": "1993-03-03", "sport": "table-tennis", "country": "Hungary"},
-        {"name": "Maria Dolgikh", "birthdate": "1989-03-24", "sport": "table-tennis", "country": "Russia"},
-        {"name": "Polina Mikhailova", "birthdate": "1986-08-31", "sport": "table-tennis", "country": "Russia"},
-        {"name": "Yana Noskova", "birthdate": "1996-09-18", "sport": "table-tennis", "country": "Russia"},
-        {"name": "Valeria Shcherbatykh", "birthdate": "1996-05-01", "sport": "table-tennis", "country": "Russia"},
-        {"name": "Olga Vorobeva", "birthdate": "1990-05-05", "sport": "table-tennis", "country": "Russia"},
-        {"name": "Sun Yingsha", "birthdate": "2000-11-04", "sport": "table-tennis", "country": "China"},
-        {"name": "Chen Meng", "birthdate": "1994-01-15", "sport": "table-tennis", "country": "China"},
-        {"name": "Wang Manyu", "birthdate": "1999-02-09", "sport": "table-tennis", "country": "China"},
-        {"name": "Mima Ito", "birthdate": "2000-10-21", "sport": "table-tennis", "country": "Japan"},
-        {"name": "Hina Hayata", "birthdate": "2000-07-07", "sport": "table-tennis", "country": "Japan"},
     ]
     
     deduped = {}
+    seed_use_birthdates = os.getenv("SEED_USE_BIRTHDATES", "false").lower() == "true"
+
     for p in players:
         name = p["name"].strip()
         sport = p["sport"].strip()
-        birthdate = p["birthdate"].strip()
+        birthdate = (p.get("birthdate") or "").strip() if seed_use_birthdates else ""
+        if not birthdate:
+            birthdate = None
         country = (p.get("country") or "").strip() or None
 
         name_norm = normalize_name(name)
@@ -1068,8 +1074,8 @@ def seed_players(
     update_cols = {
         # keep name fresh (latest pretty formatting)
         "name": stmt.excluded.name,
-        # keep birthdate up to date if seed has it
-        "birthdate": stmt.excluded.birthdate,
+        # only overwrite birthdate if seed provides a non-empty value
+        "birthdate": func.coalesce(func.nullif(stmt.excluded.birthdate, ""), Player.birthdate),
         # only update country if new one is not null
         "country": stmt.excluded.country,
     }

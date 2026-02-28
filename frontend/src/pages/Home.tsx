@@ -38,7 +38,7 @@ function Home() {
       <Card>
         <Title style={{ marginBottom: 6 }}>🔮 SPORTOLOGY</Title>
         <Paragraph style={{ fontSize: 16, maxWidth: 740, marginBottom: 0 }}>
-          Numerology-first matchup analysis for tennis, table-tennis, boxing and MMA. Enter two opponents and date,
+          Numerology-first matchup analysis for tennis and table-tennis. Enter two opponents and date,
           then get confidence, score spread and sizing guidance in seconds.
         </Paragraph>
       </Card>
