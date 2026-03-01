@@ -365,7 +365,7 @@ export default function Analyzer() {
     }
 
     return (
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+        <div className="page-container">
             <Title level={2}><DotChartOutlined /> Match Analyzer</Title>
 
             {usage && (
