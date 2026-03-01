@@ -439,6 +439,10 @@ def get_me(current_user: User = Depends(get_current_user)):
         "plan_tier": current_user.plan_tier,
     }
 
+@app.get("/api/v1/admin-email")
+def get_admin_email(current_user: User = Depends(get_current_user)):
+    return {"admin_email": os.getenv("VITE_ADMIN_EMAIL") or os.getenv("ADMIN_EMAIL") or ""}
+
 # API Key management endpoints
 @app.post("/api-keys", response_model=APIKeyResponse)
 def create_api_key(

@@ -2,19 +2,38 @@ import { useEffect, useState } from 'react'
 import { Card, Segmented, Modal, Input, Button, Space } from 'antd'
 import AdminPlayers from './AdminPlayers'
 import AdminUsers from './AdminUsers'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useAuthStore } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 
 const AdminPanel = () => {
   const [view, setView] = useState<'players' | 'users'>('players')
   const [adminKey, setAdminKey] = useState('')
   const [showKeyModal, setShowKeyModal] = useState(false)
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
+  const accessToken = useAuthStore((s) => s.accessToken)
   const navigate = useNavigate()
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+  const [adminEmail, setAdminEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!adminEmail || user?.email !== adminEmail) {
+    const loadAdminEmail = async () => {
+      if (!isAuthenticated) return
+      try {
+        const res = await fetch('/api/v1/admin-email', {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        })
+        if (!res.ok) return
+        const json = await res.json()
+        setAdminEmail((json.admin_email || '').toLowerCase())
+      } catch {
+        // ignore
+      }
+    }
+    loadAdminEmail()
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    if (!adminEmail || user?.email?.toLowerCase() !== adminEmail) {
       navigate('/')
       return
     }
@@ -24,7 +43,7 @@ const AdminPanel = () => {
     } else {
       setAdminKey(stored)
     }
-  }, [user?.email, adminEmail])
+  }, [isAuthenticated, user?.email, adminEmail])
 
   const saveKey = () => {
     if (!adminKey) return

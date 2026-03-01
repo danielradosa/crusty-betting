@@ -1,4 +1,5 @@
 import { Layout, Menu, Button, Space, Typography, Grid, Drawer } from 'antd'
+import { useEffect } from 'react'
 import {
   UserOutlined,
   DashboardOutlined,
@@ -10,7 +11,7 @@ import {
   MenuOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth, useAuthStore } from '../../hooks/useAuth'
 import { useState } from 'react'
 
 const { Header } = Layout
@@ -19,6 +20,7 @@ const { useBreakpoint } = Grid
 
 function AppHeader() {
   const { isAuthenticated, user, logout } = useAuth()
+  const accessToken = useAuthStore((s) => s.accessToken)
   const location = useLocation()
   const navigate = useNavigate()
   const screens = useBreakpoint()
@@ -30,7 +32,24 @@ function AppHeader() {
     navigate('/')
   }
 
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+  const [adminEmail, setAdminEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadAdminEmail = async () => {
+      if (!isAuthenticated) return
+      try {
+        const res = await fetch('/api/v1/admin-email', {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        })
+        if (!res.ok) return
+        const json = await res.json()
+        setAdminEmail((json.admin_email || '').toLowerCase())
+      } catch {
+        // ignore
+      }
+    }
+    loadAdminEmail()
+  }, [isAuthenticated])
 
   const menuItems = [
     { key: '/', icon: <HomeOutlined />, label: <Link to='/'>Home</Link> },
@@ -47,7 +66,7 @@ function AppHeader() {
             label: <Link to='/analyzer'>Analyzer</Link>,
           },
           { key: '/bot', icon: <RobotOutlined />, label: <Link to='/bot'>Bot</Link> },
-          ...(adminEmail && user?.email === adminEmail
+          ...(adminEmail && user?.email?.toLowerCase() === adminEmail
             ? [
                 { key: '/admin-ui', icon: <UserOutlined />, label: <Link to='/admin-ui'>Admin</Link> },
               ]
