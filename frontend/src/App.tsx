@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Analyzer = lazy(() => import('./pages/Analyzer'))
 const Bot = lazy(() => import('./pages/Bot'))
 const AdminPlayers = lazy(() => import('./pages/AdminPlayers'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 
 const { Content, Footer } = Layout
 
@@ -39,6 +40,7 @@ function App() {
                   <Route path='/analyzer' element={<Analyzer />} />
                   <Route path='/bot' element={<Bot />} />
                   <Route path='/admin-ui/players' element={<AdminPlayers />} />
+                  <Route path='/admin-ui/users' element={<AdminUsers />} />
                 </Routes>
               </Suspense>
             </div>

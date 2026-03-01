@@ -767,6 +767,27 @@ def debug_usage_logs(
         ]
     }
 
+@app.get("/admin/users")
+def list_users(request: Request, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return [
+        {
+            "id": u.id,
+            "email": u.email,
+            "created_at": u.created_at.isoformat(),
+            "plan_tier": u.plan_tier,
+        }
+        for u in users
+    ]
+
+
 @app.post("/admin/users/{user_id}/tier")
 def set_user_tier(
     user_id: int,
@@ -803,7 +824,7 @@ def search_players(
     db: Session = Depends(get_db)
 ):
     """Search players by name (autocomplete). Uses normalized name for accents/hyphens/etc."""
-    query = db.query(Player)
+    query = db.query(Player).filter(Player.verified == True)
 
     if sport:
         query = query.filter(Player.sport == sport)
@@ -1016,6 +1037,25 @@ def add_player(request: AddPlayerRequest, db: Session = Depends(get_db)):
     }
 
 
+@app.get("/admin/players")
+def list_players_admin(request: Request, verified: Optional[bool] = None, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    query = db.query(Player)
+    if verified is not None:
+        query = query.filter(Player.verified == verified)
+    players = query.order_by(Player.created_at.desc()).limit(500).all()
+    return [
+        {"id": p.id, "name": p.name, "birthdate": p.birthdate, "sport": p.sport, "verified": p.verified}
+        for p in players
+    ]
+
+
 @app.get("/admin/unverified-players")
 def list_unverified_players(request: Request, db: Session = Depends(get_db)):
     admin_key = request.headers.get("X-Admin-Key")
@@ -1048,6 +1088,65 @@ def verify_player(player_id: int, request: Request, db: Session = Depends(get_db
     player.verified = True
     db.commit()
     return {"message": "Player verified", "id": player.id}
+
+
+@app.post("/admin/players/{player_id}")
+async def update_player(player_id: int, request: Request, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    name = (data.get("name") or "").strip()
+    birthdate = (data.get("birthdate") or "").strip()
+    sport = (data.get("sport") or "").strip()
+    verified = data.get("verified")
+
+    if name:
+        player.name = name
+        player.name_norm = normalize_name(name)
+    if birthdate:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", birthdate):
+            raise HTTPException(status_code=400, detail="birthdate must be YYYY-MM-DD")
+        player.birthdate = birthdate
+    if sport:
+        if sport not in {"tennis", "table-tennis"}:
+            raise HTTPException(status_code=400, detail="invalid sport")
+        player.sport = sport
+    if isinstance(verified, bool):
+        player.verified = verified
+
+    db.commit()
+    return {"message": "Player updated", "id": player.id}
+
+
+@app.delete("/admin/players/{player_id}")
+def delete_player(player_id: int, request: Request, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    player = db.query(Player).filter(Player.id == player_id).first()
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    db.delete(player)
+    db.commit()
+    return {"message": "Player deleted", "id": player.id}
 
 def normalize_name(name: str) -> str:
     name = unicodedata.normalize("NFKD", name)

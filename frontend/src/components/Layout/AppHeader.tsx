@@ -45,7 +45,12 @@ function AppHeader() {
             label: <Link to='/analyzer'>Analyzer</Link>,
           },
           { key: '/bot', icon: <RobotOutlined />, label: <Link to='/bot'>Bot</Link> },
-          { key: '/admin-ui/players', icon: <UserOutlined />, label: <Link to='/admin-ui/players'>Admin</Link> },
+          ...(user?.email === '28@danielradosa.com'
+            ? [
+                { key: '/admin-ui/players', icon: <UserOutlined />, label: <Link to='/admin-ui/players'>Admin Players</Link> },
+                { key: '/admin-ui/users', icon: <UserOutlined />, label: <Link to='/admin-ui/users'>Admin Users</Link> },
+              ]
+            : []),
         ]
       : []),
   ]
