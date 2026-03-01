@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Button, Card, Input, Space, Table, message, Tag, Popconfirm, Modal, Select, Switch } from 'antd'
+import { useEffect, useState } from 'react'
+import { Button, Input, Space, Table, message, Tag, Popconfirm, Modal, Select, Switch } from 'antd'
+import * as XLSX from 'xlsx'
 import type { ColumnsType } from 'antd/es/table'
 
 type UnverifiedPlayer = {
@@ -11,7 +12,7 @@ type UnverifiedPlayer = {
 }
 
 const AdminPlayers = () => {
-  const [adminKey, setAdminKey] = useState('')
+  const [adminKey, setAdminKey] = useState(() => localStorage.getItem('admin_key') || '')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<UnverifiedPlayer[]>([])
   const [editing, setEditing] = useState<UnverifiedPlayer | null>(null)
@@ -21,6 +22,8 @@ const AdminPlayers = () => {
   const [editVerified, setEditVerified] = useState(false)
 
   const [showVerified, setShowVerified] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   const load = async () => {
     if (!adminKey) {
@@ -59,6 +62,50 @@ const AdminPlayers = () => {
     } catch {
       message.error('Failed to verify')
     }
+  }
+
+  const bulkVerify = async () => {
+    if (!adminKey || selectedRowKeys.length === 0) return
+    await Promise.all(selectedRowKeys.map((id) => verify(Number(id))))
+    setSelectedRowKeys([])
+  }
+
+  const bulkDelete = async () => {
+    if (!adminKey || selectedRowKeys.length === 0) return
+    await Promise.all(selectedRowKeys.map((id) => remove(Number(id))))
+    setSelectedRowKeys([])
+  }
+
+  const exportCSV = () => {
+    const rows = filteredData.map((p) => ({
+      id: p.id,
+      name: p.name,
+      birthdate: p.birthdate,
+      sport: p.sport,
+      verified: p.verified,
+    }))
+    const header = Object.keys(rows[0] || {}).join(',')
+    const body = rows.map((r) => Object.values(r).join(',')).join('\n')
+    const csv = header + '\n' + body
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'players.csv'
+    link.click()
+  }
+
+  const exportXLSX = () => {
+    const rows = filteredData.map((p) => ({
+      id: p.id,
+      name: p.name,
+      birthdate: p.birthdate,
+      sport: p.sport,
+      verified: p.verified,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Players')
+    XLSX.writeFile(wb, 'players.xlsx')
   }
 
   const remove = async (id: number) => {
@@ -112,6 +159,14 @@ const AdminPlayers = () => {
     }
   }
 
+  useEffect(() => {
+    if (adminKey) load()
+  }, [showVerified, adminKey])
+
+  const filteredData = data.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()) || p.birthdate.includes(search)
+  )
+
   const columns: ColumnsType<UnverifiedPlayer> = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'DOB', dataIndex: 'birthdate', key: 'birthdate' },
@@ -141,13 +196,16 @@ const AdminPlayers = () => {
   ]
 
   return (
-    <Card title='Unverified Players'>
+    <div>
       <Space direction='vertical' style={{ width: '100%' }} size='middle'>
         <Space>
           <Input.Password
             placeholder='Admin key'
             value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
+            onChange={(e) => {
+              setAdminKey(e.target.value)
+              localStorage.setItem('admin_key', e.target.value)
+            }}
             style={{ minWidth: 280 }}
           />
           <Button onClick={load} loading={loading}>
@@ -158,12 +216,29 @@ const AdminPlayers = () => {
             <Switch checked={showVerified} onChange={(v) => setShowVerified(v)} />
           </Space>
         </Space>
+        <Space>
+          <Input
+            placeholder='Search players'
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ minWidth: 260 }}
+          />
+          <Button onClick={bulkVerify} disabled={selectedRowKeys.length === 0}>
+            Bulk verify
+          </Button>
+          <Button danger onClick={bulkDelete} disabled={selectedRowKeys.length === 0}>
+            Bulk delete
+          </Button>
+          <Button onClick={exportCSV}>Export CSV</Button>
+          <Button onClick={exportXLSX}>Export XLSX</Button>
+        </Space>
         <Table
           rowKey='id'
           columns={columns}
-          dataSource={data}
+          dataSource={filteredData}
           pagination={{ pageSize: 20 }}
           loading={loading}
+          rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
         />
       </Space>
 
@@ -186,7 +261,7 @@ const AdminPlayers = () => {
           </Space>
         </Space>
       </Modal>
-    </Card>
+    </div>
   )
 }
 

@@ -788,6 +788,51 @@ def list_users(request: Request, db: Session = Depends(get_db)):
     ]
 
 
+@app.post("/admin/users/{user_id}")
+async def update_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.email = email
+    db.commit()
+    return {"message": "Email updated", "user_id": user.id, "email": user.email}
+
+
+@app.delete("/admin/users/{user_id}")
+def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+    admin_key = request.headers.get("X-Admin-Key")
+    expected_key = os.getenv("ADMIN_KEY")
+    if not expected_key:
+        raise HTTPException(status_code=500, detail="ADMIN_KEY not configured")
+    if admin_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid admin key")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted", "user_id": user.id}
+
+
 @app.post("/admin/users/{user_id}/tier")
 def set_user_tier(
     user_id: int,
