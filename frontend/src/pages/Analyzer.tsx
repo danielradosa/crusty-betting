@@ -347,6 +347,7 @@ export default function Analyzer() {
             const data = await analyzeMatch(payload, apiKey)
             setResult(data)
             message.success("Analysis complete")
+            await loadHistory()
             if (accessToken) {
                 const stats = await getUsageStats(accessToken)
                 setUsage(stats)
