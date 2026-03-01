@@ -2,20 +2,29 @@ import { useEffect, useState } from 'react'
 import { Card, Segmented, Modal, Input, Button, Space } from 'antd'
 import AdminPlayers from './AdminPlayers'
 import AdminUsers from './AdminUsers'
+import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 const AdminPanel = () => {
   const [view, setView] = useState<'players' | 'users'>('players')
   const [adminKey, setAdminKey] = useState('')
   const [showKeyModal, setShowKeyModal] = useState(false)
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
 
   useEffect(() => {
+    if (!adminEmail || user?.email !== adminEmail) {
+      navigate('/')
+      return
+    }
     const stored = localStorage.getItem('admin_key') || ''
     if (!stored) {
       setShowKeyModal(true)
     } else {
       setAdminKey(stored)
     }
-  }, [])
+  }, [user?.email, adminEmail])
 
   const saveKey = () => {
     if (!adminKey) return
