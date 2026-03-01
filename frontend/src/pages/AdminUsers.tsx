@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Input, Select, Space, Table, message, Tag } from 'antd'
+import { Button, Card, Input, Select, Space, Table, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 
 type UserRow = {
