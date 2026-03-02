@@ -926,6 +926,41 @@ def get_analysis_history(
     ]
 
 
+@app.delete("/api/v1/analysis-history")
+def clear_analysis_history(
+    current_user: User = Depends(get_current_user),
+    q: str = "",
+    sport: str = "",
+    start_date: str = "",
+    end_date: str = "",
+    db: Session = Depends(get_db),
+):
+    """Delete analysis history entries for the current user.
+
+    If q/sport/start_date/end_date are provided, only matching rows are deleted.
+    """
+    query = db.query(AnalysisHistory).filter(AnalysisHistory.user_id == current_user.id)
+
+    if sport:
+        query = query.filter(AnalysisHistory.sport == sport)
+    if q:
+        q_raw = q.strip()
+        query = query.filter(
+            or_(
+                AnalysisHistory.player1_name.ilike(f"%{q_raw}%"),
+                AnalysisHistory.player2_name.ilike(f"%{q_raw}%"),
+            )
+        )
+    if start_date:
+        query = query.filter(AnalysisHistory.match_date >= start_date)
+    if end_date:
+        query = query.filter(AnalysisHistory.match_date <= end_date)
+
+    deleted = query.delete(synchronize_session=False)
+    db.commit()
+    return {"deleted": deleted}
+
+
 @app.get("/api/v1/analysis-history/{history_id}")
 def get_analysis_history_detail(
     history_id: int,

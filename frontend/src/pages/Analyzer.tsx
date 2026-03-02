@@ -22,6 +22,7 @@ import {
     Modal,
     Descriptions,
     Collapse,
+    Popconfirm,
 } from "antd"
 import { InfoCircleOutlined, DotChartOutlined, CaretUpOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
@@ -354,6 +355,28 @@ export default function Analyzer() {
         }
     }
 
+    const clearHistory = async () => {
+        if (!accessToken) return
+        try {
+            const params = new URLSearchParams()
+            if (historyQuery) params.append('q', historyQuery)
+            if (historySport) params.append('sport', historySport)
+            if (historyRange?.[0]) params.append('start_date', historyRange[0].format('YYYY-MM-DD'))
+            if (historyRange?.[1]) params.append('end_date', historyRange[1].format('YYYY-MM-DD'))
+
+            const res = await fetch(`/api/v1/analysis-history?${params.toString()}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${accessToken}` },
+            })
+            if (!res.ok) throw new Error('Failed to clear history')
+            const json = await res.json()
+            message.success(`Deleted ${json.deleted || 0} history entr${(json.deleted || 0) === 1 ? 'y' : 'ies'}`)
+            await loadHistory()
+        } catch (e: any) {
+            message.error(e?.message || 'Failed to clear history')
+        }
+    }
+
     useEffect(() => {
         loadHistory()
     }, [accessToken, historyQuery, historySport, historyRange])
@@ -654,7 +677,30 @@ export default function Analyzer() {
                         <Select.Option value="table-tennis">Table Tennis</Select.Option>
                     </Select>
 
-                    <Space>
+                    <Space wrap>
+                        <Button onClick={() => {
+                            setHistoryQuery('')
+                            setHistorySport('')
+                            setHistoryRange(null)
+                        }}>
+                            Clear filters
+                        </Button>
+
+                        <Popconfirm
+                            title="Clear history"
+                            description={historyQuery || historySport || historyRange
+                                ? 'This will delete the currently filtered history entries. This cannot be undone.'
+                                : 'This will delete ALL your history entries. This cannot be undone.'}
+                            okText="Delete"
+                            okButtonProps={{ danger: true }}
+                            cancelText="Cancel"
+                            onConfirm={clearHistory}
+                        >
+                            <Button danger>
+                                Clear history
+                            </Button>
+                        </Popconfirm>
+
                         <Button onClick={() => {
                             const rows = history.map((h) => ({
                                 date: h.created_at,
