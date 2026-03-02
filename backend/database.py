@@ -156,8 +156,10 @@ def ensure_schema_updates():
 
     if "plan_expires_at" not in cols:
         try:
+            db_url = str(engine.url)
+            coltype = "TIMESTAMP" if db_url.startswith("postgres") else "DATETIME"
             with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE users ADD COLUMN plan_expires_at DATETIME"))
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN plan_expires_at {coltype}"))
         except Exception:
             pass
 
