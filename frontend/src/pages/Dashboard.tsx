@@ -3,6 +3,7 @@ import {
   Card,
   Row,
   Col,
+  Grid,
   Button,
   Table,
   Tag,
@@ -40,6 +41,7 @@ import { ApiError } from '../services/apiClient'
 import { BrowserProvider, Contract, parseUnits } from 'ethers'
 
 const { Title, Text } = Typography
+const { useBreakpoint } = Grid
 
 function Dashboard() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
@@ -56,6 +58,7 @@ function Dashboard() {
 
   const { accessToken } = useAuthStore()
   const { user } = useAuth()
+  const screens = useBreakpoint()
 
   const { isConnected, stats, requestStats, error: wsError } = useWebSocket({
     autoConnect: true,
@@ -79,6 +82,12 @@ function Dashboard() {
       return String(expiresIso)
     }
   }, [expiresIso])
+
+  const shortAddr = (addr?: string | null) => {
+    if (!addr) return '—'
+    if (addr.length <= 16) return addr
+    return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  }
 
   const requireToken = useCallback(() => {
     if (!accessToken) {
@@ -347,7 +356,7 @@ function Dashboard() {
           description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000 / day soft cap with fair-use policy.' : undefined}
         />
 
-        <Row gutter={[16, 16]}>
+        <Row gutter={[16, 16]} wrap={!screens.md}>
           {/* Left: API keys + stats */}
           <Col xs={24} md={14} lg={14} className="col-shrink">
             <Space className="page-stack" direction="vertical" size={16} style={{ width: '100%' }}>
@@ -461,7 +470,7 @@ function Dashboard() {
 
                 <Space wrap>
                   <Text type="secondary">Linked wallet:</Text>
-                  <Text code>{linkedWallet || '—'}</Text>
+                  <Text code>{shortAddr(linkedWallet)}</Text>
                   <Button onClick={handleLinkWallet} loading={walletBusy}>
                     {linkedWallet ? 'Relink wallet' : 'Link wallet'}
                   </Button>
