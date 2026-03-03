@@ -93,7 +93,7 @@ function DemoAnalyzer() {
           sport: 'tennis',
         }}
       >
-        <Row gutter={12}>
+        <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
             <Form.Item name='player1_name' label='Player 1 Name' rules={[{ required: true }]}>
               <Input placeholder='e.g., Novak Djokovic' />

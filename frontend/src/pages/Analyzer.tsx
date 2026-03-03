@@ -423,10 +423,11 @@ export default function Analyzer() {
 
     return (
         <div className="page-container">
-            <Title level={2}><DotChartOutlined /> Match Analyzer</Title>
+            <Space className="page-stack" direction="vertical" size={16} style={{ width: '100%' }}>
+            <Title level={2} style={{ marginBottom: 0 }}><DotChartOutlined /> Match Analyzer</Title>
 
             {usage && (
-                <Card style={{ marginBottom: 12 }}>
+                <Card>
                     <Space direction='vertical' style={{ width: '100%' }} size={6}>
                         <Space style={{ justifyContent: 'space-between', width: '100%' }}>
                             <Text strong>Usage (last 24h epoch)</Text>
@@ -440,7 +441,7 @@ export default function Analyzer() {
                 </Card>
             )}
 
-            <Row gutter={[24, 24]}>
+            <Row gutter={[16, 16]}>
                 <Col xs={24} lg={14}>
                     <Card>
                         {keysLoading ? (
@@ -479,7 +480,7 @@ export default function Analyzer() {
                             <Select options={sportOptions} onChange={onSportChange} />
                         </Form.Item>
 
-                        <Row gutter={16}>
+                        <Row gutter={[16, 16]}>
                             <Col xs={24} md={12}>
                                 <Form.Item label="Player 1 Name" name="player1_name" rules={[{ required: true }]}>
                                     <AutoComplete
@@ -525,7 +526,7 @@ export default function Analyzer() {
                             </Col>
                         </Row>
 
-                        <Row gutter={16}>
+                        <Row gutter={[16, 16]}>
                             <Col xs={24} md={12}>
                                 <Form.Item label="Player 2 Name" name="player2_name" rules={[{ required: true }]}>
                                     <AutoComplete
@@ -604,7 +605,7 @@ export default function Analyzer() {
                         </Space>
                     </Card>
 
-                    <Row gutter={16} style={{ marginBottom: 16 }}>
+                    <Row gutter={[16, 16]}>
                         <Col xs={24} md={12}>
                             <Card bordered title={result.player1?.name || 'Player 1'}>
                                 <Text>Total Score: {result.player1?.score}</Text>
@@ -657,8 +658,8 @@ export default function Analyzer() {
 
                 </Col>
 
-                <Col xs={24} lg={10} style={{ paddingLeft: '0px' }}>
-                    <Card style={{ position: 'sticky', top: 24 }} title="History">
+                <Col xs={24} lg={10}>
+                    <Card className={isMobile ? '' : 'side-card'} title="History">
                 <Space direction="vertical" style={{ width: '100%' }} size="middle">
                     <Input
                         placeholder="Search players"
@@ -867,6 +868,7 @@ export default function Analyzer() {
             </Card>
                 </Col>
             </Row>
+            </Space>
         </div>
     )
 }

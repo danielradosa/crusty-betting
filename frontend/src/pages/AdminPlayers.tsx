@@ -202,8 +202,8 @@ const AdminPlayers = ({ adminKey: adminKeyProp }: { adminKey?: string }) => {
   ]
 
   return (
-    <div>
-      <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+    <div className="page-stack">
+      <Space className="page-stack" direction='vertical' style={{ width: '100%' }} size={16}>
         <Space>
           <Input.Password
             placeholder='Admin key'

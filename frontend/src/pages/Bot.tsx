@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
     return (
         <div className="page-container">
-            <Space direction="vertical" size={16} style={{ width: "100%" }}>
+            <Space className="page-stack" direction="vertical" size={16} style={{ width: "100%" }}>
                 <Title level={2} style={{ marginBottom: 0 }}>
                     <ApiOutlined /> Bot Setup (Coming soon)
                 </Title>
@@ -250,7 +250,7 @@ if __name__ == "__main__":
                     }
                 />
 
-                <Row gutter={16}>
+                <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Card
                             title={

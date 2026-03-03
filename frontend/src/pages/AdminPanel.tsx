@@ -53,7 +53,9 @@ const AdminPanel = () => {
   }
 
   return (
-    <Card title='Admin'>
+    <div className='page-container'>
+      <Space className='page-stack' direction='vertical' size={16} style={{ width: '100%' }}>
+        <Card title='Admin'>
       <Segmented
         value={view}
         onChange={(val) => setView(val as 'players' | 'users')}
@@ -78,6 +80,8 @@ const AdminPanel = () => {
         </Space>
       </Modal>
     </Card>
+      </Space>
+    </div>
   )
 }
 

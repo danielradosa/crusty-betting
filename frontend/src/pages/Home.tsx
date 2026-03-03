@@ -34,7 +34,8 @@ const features = [
 
 function Home() {
   return (
-    <Space direction='vertical' size={20} style={{ width: '100%' }}>
+    <div className='page-container'>
+      <Space className='page-stack' direction='vertical' size={16} style={{ width: '100%' }}>
       <Card>
         <Title style={{ marginBottom: 6 }}>🔮 SAPI | SPORTOLOGY + API</Title>
         <Paragraph style={{ fontSize: 16, maxWidth: 740, marginBottom: 0 }}>
@@ -46,7 +47,7 @@ function Home() {
       <Card>
         <Space direction='vertical' size={12} style={{ width: '100%' }}>
           <Title level={4} style={{ margin: 0 }}>Membership tiers</Title>
-          <Row gutter={[12, 12]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} md={8}>
               <Card size='small' title='Free'>
                 <Text>€0 / month</Text>
@@ -104,7 +105,8 @@ function Home() {
           </Card>
         </Col>
       </Row>
-    </Space>
+      </Space>
+    </div>
   )
 }
 

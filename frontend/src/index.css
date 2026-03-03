@@ -68,10 +68,40 @@ body {
   padding: 18px;
 }
 
+/* Consistent right-column cards (Analyzer history, etc.) */
+.side-card {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 991px) {
+  .side-card {
+    position: static;
+    top: auto;
+  }
+}
+
 .page-container {
   max-width: 1180px;
   margin: 0 auto;
   animation: fadeAlchemy 320ms ease-out;
+}
+
+/* Unified spacing */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Make Alerts behave like normal stack items (no surprise margins) */
+.page-stack .ant-alert {
+  margin: 0 !important;
+}
+
+/* Allow inline button groups to wrap on narrow widths */
+.ant-space {
+  flex-wrap: wrap;
 }
 
 .route-fallback {
@@ -172,14 +202,6 @@ body {
   box-shadow: 0 0 24px rgba(123, 47, 247, 0.55);
 }
 
-  .page-container .ant-card:last-child {
-    margin-bottom: 0;
-  }
-
-  .ant-space {
-    flex-wrap: wrap;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .page-container,

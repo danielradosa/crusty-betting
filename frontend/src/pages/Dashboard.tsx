@@ -61,22 +61,24 @@ function Dashboard() {
     autoConnect: true,
   })
 
-  const tier = (user?.plan_tier || 'free').toLowerCase()
+  const tier = ((subStatus?.plan_tier || user?.plan_tier || 'free') as string).toLowerCase()
   const keyLimit = tier === 'free' ? 1 : tier === 'starter' ? 3 : 'Unlimited'
 
   const treasuryWallet = subStatus?.treasury_wallet || undefined
   const usdcAddress = ((import.meta as any).env?.VITE_POLYGON_USDC_ADDRESS as string | undefined) ||
     '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359'
 
+  const linkedWallet = subStatus?.wallet_address || user?.wallet_address || null
+  const expiresIso = subStatus?.plan_expires_at ?? user?.plan_expires_at ?? null
+
   const planExpiresText = useMemo(() => {
-    const iso = user?.plan_expires_at
-    if (!iso) return null
+    if (!expiresIso) return null
     try {
-      return new Date(iso).toLocaleString()
+      return new Date(expiresIso).toLocaleString()
     } catch {
-      return iso
+      return String(expiresIso)
     }
-  }, [user?.plan_expires_at])
+  }, [expiresIso])
 
   const requireToken = useCallback(() => {
     if (!accessToken) {
@@ -332,20 +334,20 @@ function Dashboard() {
   ]
 
   return (
-    <div>
-      <Title level={2}>
-        <ApiOutlined /> Dashboard
-      </Title>
+    <div className="page-container">
+      <Space className="page-stack" direction="vertical" size={16} style={{ width: '100%' }}>
+        <Title level={2} style={{ marginBottom: 0 }}>
+          <ApiOutlined /> Dashboard
+        </Title>
 
       <Alert
-        style={{ marginBottom: 16 }}
         type='info'
         showIcon
         message={`Current tier: ${tier.toUpperCase()} · API keys: ${apiKeys.filter(k => k.active).length} / ${keyLimit}`}
         description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000 / day soft cap with fair-use policy.' : undefined}
       />
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
           <Card>
             {loading ? (
@@ -387,7 +389,7 @@ function Dashboard() {
         </Col>
       </Row>
 
-      <Row style={{ marginBottom: 16 }}>
+      <Row>
         <Col span={24}>
           <Space wrap>
             <Button type='primary' icon={<ReloadOutlined />} onClick={requestStats} disabled={!isConnected}>
@@ -404,7 +406,6 @@ function Dashboard() {
         <Alert
           type='warning'
           showIcon
-          style={{ marginBottom: 16 }}
           message='Realtime connection issue'
           description={wsError}
         />
@@ -415,15 +416,21 @@ function Dashboard() {
           <Alert
             type="info"
             showIcon
-            message={`Tier: ${(user?.plan_tier || 'free').toUpperCase()}`}
-            description={planExpiresText ? `Expires: ${planExpiresText} (24h grace after expiry)` : 'No active subscription.'}
+            message={`Tier: ${tier.toUpperCase()}`}
+            description={
+              planExpiresText
+                ? `Expires: ${planExpiresText} (24h grace after expiry)`
+                : tier !== 'free'
+                  ? 'No expiry (manual/admin)'
+                  : 'No active subscription.'
+            }
           />
 
           <Space wrap>
             <Text type="secondary">Linked wallet:</Text>
-            <Text code>{user?.wallet_address || subStatus?.wallet_address || '—'}</Text>
+            <Text code>{linkedWallet || '—'}</Text>
             <Button onClick={handleLinkWallet} loading={walletBusy}>
-              {user?.wallet_address ? 'Relink wallet' : 'Link wallet'}
+              {linkedWallet ? 'Relink wallet' : 'Link wallet'}
             </Button>
           </Space>
 
@@ -452,7 +459,7 @@ function Dashboard() {
             <Button
               type="primary"
               onClick={() => sendUsdc(19)}
-              disabled={!treasuryWallet || !user?.wallet_address}
+              disabled={!treasuryWallet || !linkedWallet}
               loading={walletBusy}
             >
               Subscribe Starter (19 USDC)
@@ -460,12 +467,19 @@ function Dashboard() {
             <Button
               type="primary"
               onClick={() => sendUsdc(49)}
-              disabled={!treasuryWallet || !user?.wallet_address}
+              disabled={!treasuryWallet || !linkedWallet}
               loading={walletBusy}
             >
               Subscribe Pro (49 USDC)
             </Button>
-            <Button icon={<ReloadOutlined />} onClick={fetchSubStatus} loading={subLoading}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={async () => {
+                await fetchSubStatus()
+                await refreshMe()
+              }}
+              loading={subLoading}
+            >
               Refresh
             </Button>
           </Space>
@@ -474,7 +488,7 @@ function Dashboard() {
             <Text type="secondary">Last tx: <Text code>{lastTx}</Text></Text>
           )}
 
-          {!user?.wallet_address && (
+          {!linkedWallet && (
             <Alert
               type="warning"
               showIcon
@@ -534,6 +548,7 @@ function Dashboard() {
           </Form.Item>
         </Form>
       </Modal>
+      </Space>
     </div>
   )
 }
