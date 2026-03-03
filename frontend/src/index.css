@@ -110,6 +110,12 @@ body {
   margin: 0 !important;
 }
 
+/* Prevent long addresses from breaking grid layout */
+.code-wrap {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
 /* Allow inline button groups to wrap on narrow widths */
 .ant-space {
   flex-wrap: wrap;

@@ -347,7 +347,7 @@ function Dashboard() {
           description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000 / day soft cap with fair-use policy.' : undefined}
         />
 
-        <Row gutter={[16, 16]}>
+        <Row gutter={[16, 16]} style={{ width: '100%' }}>
           {/* Left: API keys + stats */}
           <Col xs={24} md={14} lg={14}>
             <Space className="page-stack" direction="vertical" size={16} style={{ width: '100%' }}>
@@ -461,7 +461,7 @@ function Dashboard() {
 
                 <Space wrap>
                   <Text type="secondary">Linked wallet:</Text>
-                  <Text code>{linkedWallet || '—'}</Text>
+                  <Text code className="code-wrap">{linkedWallet || '—'}</Text>
                   <Button onClick={handleLinkWallet} loading={walletBusy}>
                     {linkedWallet ? 'Relink wallet' : 'Link wallet'}
                   </Button>
@@ -469,7 +469,7 @@ function Dashboard() {
 
                 <Space wrap>
                   <Text type="secondary">Treasury:</Text>
-                  <Text code>{treasuryWallet || 'NOT SET'}</Text>
+                  <Text code className="code-wrap">{treasuryWallet || 'NOT SET'}</Text>
                   {treasuryWallet && (
                     <Tooltip title="Copy">
                       <Button
