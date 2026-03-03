@@ -941,8 +941,21 @@ def get_usage_stats(
     limit_by_tier = {"free": 10, "starter": 100, "pro": 1000}
     limit = limit_by_tier.get(tier, 10)
 
-    # Epoch boundaries
-    anchor = getattr(current_user, "rate_epoch_anchor_at", None) or now
+    # Epoch boundaries (stabilize anchor)
+    anchor = getattr(current_user, "rate_epoch_anchor_at", None)
+    if not anchor:
+        first = (
+            db.query(UsageLog)
+            .filter(UsageLog.user_id == current_user.id, UsageLog.success == True)
+            .order_by(UsageLog.timestamp.asc())
+            .first()
+        )
+        anchor = (first.timestamp if first else None) or getattr(current_user, "created_at", None) or now
+        try:
+            current_user.rate_epoch_anchor_at = anchor
+            db.commit()
+        except Exception:
+            pass
     elapsed = now - anchor
     if elapsed.total_seconds() < 0:
         anchor = now

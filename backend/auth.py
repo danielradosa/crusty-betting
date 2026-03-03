@@ -175,8 +175,19 @@ def check_rate_limit(user: User, db: Session):
 
     anchor = getattr(user, "rate_epoch_anchor_at", None)
     if not anchor:
-        # Initialize anchor at first use. We don't commit here yet; only if request succeeds.
-        anchor = now
+        # Backfill anchor from first successful request if available; otherwise fall back to user.created_at.
+        first = (
+            db.query(UsageLog)
+            .filter(UsageLog.user_id == user.id, UsageLog.success == True)
+            .order_by(UsageLog.timestamp.asc())
+            .first()
+        )
+        anchor = (first.timestamp if first else None) or getattr(user, "created_at", None) or now
+        try:
+            user.rate_epoch_anchor_at = anchor
+            db.commit()
+        except Exception:
+            pass
 
     # Find current epoch boundaries
     elapsed = now - anchor
