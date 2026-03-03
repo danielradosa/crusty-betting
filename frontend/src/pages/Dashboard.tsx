@@ -340,214 +340,220 @@ function Dashboard() {
           <ApiOutlined /> Dashboard
         </Title>
 
-      <Alert
-        type='info'
-        showIcon
-        message={`Current tier: ${tier.toUpperCase()} · API keys: ${apiKeys.filter(k => k.active).length} / ${keyLimit}`}
-        description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000 / day soft cap with fair-use policy.' : undefined}
-      />
+        <Alert
+          type='info'
+          showIcon
+          message={`Current tier: ${tier.toUpperCase()} · API keys: ${apiKeys.filter(k => k.active).length} / ${keyLimit}`}
+          description={tier === 'pro' ? 'Pro includes unlimited API keys and a 1000 / day soft cap with fair-use policy.' : undefined}
+        />
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={8}>
-          <Card>
-            {loading ? (
-              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
-            ) : (
-              <Statistic
+        <Row gutter={[16, 16]}>
+          {/* Left: API keys + stats */}
+          <Col xs={24} lg={14}>
+            <Space className="page-stack" direction="vertical" size={16} style={{ width: '100%' }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={8}>
+                  <Card>
+                    {loading ? (
+                      <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                    ) : (
+                      <Statistic
+                        title={
+                          <Space>
+                            <Text>Connection</Text>
+                            <Tooltip title='Real-time updates via WebSocket'>
+                              <QuestionCircleOutlined />
+                            </Tooltip>
+                          </Space>
+                        }
+                        value={isConnected ? 'Connected' : 'Disconnected'}
+                        valueStyle={{ color: isConnected ? '#3f8600' : '#cf1322' }}
+                        prefix={isConnected ? <SyncOutlined spin /> : <CloseCircleOutlined />}
+                      />
+                    )}
+                  </Card>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Card>
+                    {loading ? (
+                      <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                    ) : (
+                      <Statistic title='Daily Requests' value={stats?.daily_requests || 0} prefix={<ApiOutlined />} />
+                    )}
+                  </Card>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Card>
+                    {loading ? (
+                      <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                    ) : (
+                      <Statistic title='Total Requests' value={stats?.total_requests || 0} prefix={<KeyOutlined />} />
+                    )}
+                  </Card>
+                </Col>
+              </Row>
+
+              <Space wrap>
+                <Button type='primary' icon={<ReloadOutlined />} onClick={requestStats} disabled={!isConnected}>
+                  Refresh Stats
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchApiKeys} loading={loading}>
+                  Refresh API Keys
+                </Button>
+              </Space>
+
+              {wsError && (
+                <Alert
+                  type='warning'
+                  showIcon
+                  message='Realtime connection issue'
+                  description={wsError}
+                />
+              )}
+
+              <Card
                 title={
                   <Space>
-                    <Text>Connection</Text>
-                    <Tooltip title='Real-time updates via WebSocket'>
-                      <QuestionCircleOutlined />
-                    </Tooltip>
+                    <KeyOutlined />
+                    <span>API Keys</span>
+                    <Badge count={apiKeys.length} style={{ backgroundColor: '#1890ff' }} />
                   </Space>
                 }
-                value={isConnected ? 'Connected' : 'Disconnected'}
-                valueStyle={{ color: isConnected ? '#3f8600' : '#cf1322' }}
-                prefix={isConnected ? <SyncOutlined spin /> : <CloseCircleOutlined />}
-              />
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            {loading ? (
-              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
-            ) : (
-              <Statistic title='Daily Requests' value={stats?.daily_requests || 0} prefix={<ApiOutlined />} />
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            {loading ? (
-              <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
-            ) : (
-              <Statistic title='Total Requests' value={stats?.total_requests || 0} prefix={<KeyOutlined />} />
-            )}
-          </Card>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col span={24}>
-          <Space wrap>
-            <Button type='primary' icon={<ReloadOutlined />} onClick={requestStats} disabled={!isConnected}>
-              Refresh Stats
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={fetchApiKeys} loading={loading}>
-              Refresh API Keys
-            </Button>
-          </Space>
-        </Col>
-      </Row>
-
-      {wsError && (
-        <Alert
-          type='warning'
-          showIcon
-          message='Realtime connection issue'
-          description={wsError}
-        />
-      )}
-
-      <Card title="Subscription (USDC on Polygon)">
-        <div className="card-stack">
-          <Alert
-            type="info"
-            showIcon
-            message={`Tier: ${tier.toUpperCase()}`}
-            description={
-              planExpiresText
-                ? `Expires: ${planExpiresText} (24h grace after expiry)`
-                : tier !== 'free'
-                  ? 'No expiry (manual/admin)'
-                  : 'No active subscription.'
-            }
-          />
-
-          <Space wrap>
-            <Text type="secondary">Linked wallet:</Text>
-            <Text code>{linkedWallet || '—'}</Text>
-            <Button onClick={handleLinkWallet} loading={walletBusy}>
-              {linkedWallet ? 'Relink wallet' : 'Link wallet'}
-            </Button>
-          </Space>
-
-          <Space wrap>
-            <Text type="secondary">Treasury:</Text>
-            <Text code>{treasuryWallet || 'NOT SET'}</Text>
-            {treasuryWallet && (
-              <Tooltip title="Copy">
-                <Button
-                  size="small"
-                  icon={<CopyOutlined />}
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(treasuryWallet)
-                      message.success('Copied treasury address')
-                    } catch {
-                      message.error('Failed to copy')
-                    }
-                  }}
-                />
-              </Tooltip>
-            )}
-          </Space>
-
-          <Space wrap>
-            <Button
-              type="primary"
-              onClick={() => sendUsdc(19)}
-              disabled={!treasuryWallet || !linkedWallet}
-              loading={walletBusy}
-            >
-              Subscribe Starter (19 USDC)
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => sendUsdc(49)}
-              disabled={!treasuryWallet || !linkedWallet}
-              loading={walletBusy}
-            >
-              Subscribe Pro (49 USDC)
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={async () => {
-                await fetchSubStatus()
-                await refreshMe()
-              }}
-              loading={subLoading}
-            >
-              Refresh
-            </Button>
-          </Space>
-
-          {lastTx && (
-            <Text type="secondary">Last tx: <Text code>{lastTx}</Text></Text>
-          )}
-
-          {!linkedWallet && (
-            <Alert
-              type="warning"
-              showIcon
-              message="Link your wallet first"
-              description="We verify payments by matching the sender address to your linked wallet, then checking the USDC transfer amount (19 or 49) to the treasury wallet."
-            />
-          )}
-        </div>
-      </Card>
-
-      <Card
-        title={
-          <Space>
-            <KeyOutlined />
-            <span>API Keys</span>
-            <Badge count={apiKeys.length} style={{ backgroundColor: '#1890ff' }} />
-          </Space>
-        }
-        extra={
-          <Button type='primary' icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>
-            Create API Key
-          </Button>
-        }
-      >
-        {loading ? (
-          <Skeleton active paragraph={{ rows: 6 }} />
-        ) : apiKeys.length > 0 ? (
-          <Table dataSource={apiKeys} columns={columns} rowKey='id' pagination={false} scroll={{ x: 760 }} />
-        ) : (
-          <Alert
-            message='No API Keys'
-            description='You have not created any API keys yet.'
-            type='info'
-            showIcon
-            action={<Button type='primary' size='small' onClick={() => setIsCreateModalOpen(true)}>Create first key</Button>}
-          />
-        )}
-      </Card>
-
-      <Modal
-        title='Create New API Key'
-        open={isCreateModalOpen}
-        onCancel={() => setIsCreateModalOpen(false)}
-        footer={null}
-      >
-        <Form form={createForm} layout='vertical' onFinish={handleCreateApiKey}>
-          <Form.Item name='name' label='Key Name' rules={[{ required: true, message: 'Please enter a key name' }]}>
-            <Input placeholder='e.g., Production key' />
-          </Form.Item>
-          <Form.Item>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
-              <Button type='primary' htmlType='submit' loading={createLoading}>
-                Create
-              </Button>
+                extra={
+                  <Button type='primary' icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>
+                    Create API Key
+                  </Button>
+                }
+              >
+                {loading ? (
+                  <Skeleton active paragraph={{ rows: 6 }} />
+                ) : apiKeys.length > 0 ? (
+                  <Table dataSource={apiKeys} columns={columns} rowKey='id' pagination={false} scroll={{ x: 760 }} />
+                ) : (
+                  <Alert
+                    message='No API Keys'
+                    description='You have not created any API keys yet.'
+                    type='info'
+                    showIcon
+                    action={<Button type='primary' size='small' onClick={() => setIsCreateModalOpen(true)}>Create first key</Button>}
+                  />
+                )}
+              </Card>
             </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+          </Col>
+
+          {/* Right: Subscription */}
+          <Col xs={24} lg={10}>
+            <Card className="side-card" title="Subscription (USDC on Polygon)">
+              <div className="card-stack">
+                <Alert
+                  type="info"
+                  showIcon
+                  message={`Tier: ${tier.toUpperCase()}`}
+                  description={
+                    planExpiresText
+                      ? `Expires: ${planExpiresText} (24h grace after expiry)`
+                      : tier !== 'free'
+                        ? 'No expiry (manual/admin)'
+                        : 'No active subscription.'
+                  }
+                />
+
+                <Space wrap>
+                  <Text type="secondary">Linked wallet:</Text>
+                  <Text code>{linkedWallet || '—'}</Text>
+                  <Button onClick={handleLinkWallet} loading={walletBusy}>
+                    {linkedWallet ? 'Relink wallet' : 'Link wallet'}
+                  </Button>
+                </Space>
+
+                <Space wrap>
+                  <Text type="secondary">Treasury:</Text>
+                  <Text code>{treasuryWallet || 'NOT SET'}</Text>
+                  {treasuryWallet && (
+                    <Tooltip title="Copy">
+                      <Button
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(treasuryWallet)
+                            message.success('Copied treasury address')
+                          } catch {
+                            message.error('Failed to copy')
+                          }
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </Space>
+
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    onClick={() => sendUsdc(19)}
+                    disabled={!treasuryWallet || !linkedWallet}
+                    loading={walletBusy}
+                  >
+                    Subscribe Starter (19 USDC)
+                  </Button>
+                  <Button
+                    type="primary"
+                    onClick={() => sendUsdc(49)}
+                    disabled={!treasuryWallet || !linkedWallet}
+                    loading={walletBusy}
+                  >
+                    Subscribe Pro (49 USDC)
+                  </Button>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={async () => {
+                      await fetchSubStatus()
+                      await refreshMe()
+                    }}
+                    loading={subLoading}
+                  >
+                    Refresh
+                  </Button>
+                </Space>
+
+                {lastTx && (
+                  <Text type="secondary">Last tx: <Text code>{lastTx}</Text></Text>
+                )}
+
+                {!linkedWallet && (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    message="Link your wallet first"
+                    description="We verify payments by matching the sender address to your linked wallet, then checking the USDC transfer amount (19 or 49) to the treasury wallet."
+                  />
+                )}
+              </div>
+            </Card>
+          </Col>
+        </Row>
+
+        <Modal
+          title='Create New API Key'
+          open={isCreateModalOpen}
+          onCancel={() => setIsCreateModalOpen(false)}
+          footer={null}
+        >
+          <Form form={createForm} layout='vertical' onFinish={handleCreateApiKey}>
+            <Form.Item name='name' label='Key Name' rules={[{ required: true, message: 'Please enter a key name' }]}>
+              <Input placeholder='e.g., Production key' />
+            </Form.Item>
+            <Form.Item>
+              <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                <Button onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
+                <Button type='primary' htmlType='submit' loading={createLoading}>
+                  Create
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
       </Space>
     </div>
   )
