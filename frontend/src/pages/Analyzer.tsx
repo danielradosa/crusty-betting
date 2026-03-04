@@ -506,7 +506,7 @@ export default function Analyzer() {
                                                     Save Player
                                                 </Button>
                                             )}
-                                            {!p1BirthLocked && p1HasDbRecord && (
+                                            {!p1BirthLocked && p1Name && !p1Birth && (
                                                 <Button size="small" type="link" onClick={() => resolveBirthdate('player1')}>
                                                     Fetch DOB
                                                 </Button>
@@ -552,7 +552,7 @@ export default function Analyzer() {
                                                     Save Player
                                                 </Button>
                                             )}
-                                            {!p2BirthLocked && p2HasDbRecord && (
+                                            {!p2BirthLocked && p2Name && !p2Birth && (
                                                 <Button size="small" type="link" onClick={() => resolveBirthdate('player2')}>
                                                     Fetch DOB
                                                 </Button>

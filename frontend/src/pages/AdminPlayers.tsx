@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Space, Table, message, Tag, Popconfirm, Modal, Select, Switch } from 'antd'
 import * as XLSX from 'xlsx'
 import type { ColumnsType } from 'antd/es/table'
+import { normalizeName } from '../utils/normalize'
 
 type UnverifiedPlayer = {
   id: number
@@ -169,9 +170,13 @@ const AdminPlayers = ({ adminKey: adminKeyProp }: { adminKey?: string }) => {
     if (adminKey) load()
   }, [showVerified, adminKey])
 
-  const filteredData = data.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) || p.birthdate.includes(search)
-  )
+  const searchNorm = normalizeName(search)
+
+  const filteredData = data.filter((p) => {
+    if (!searchNorm) return true
+    const nameNorm = normalizeName(p.name)
+    return nameNorm.includes(searchNorm) || String(p.birthdate || '').includes(searchNorm)
+  })
 
   const columns: ColumnsType<UnverifiedPlayer> = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
