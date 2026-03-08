@@ -24,7 +24,7 @@ import {
     Collapse,
     Popconfirm,
 } from "antd"
-import { InfoCircleOutlined, DotChartOutlined, CaretUpOutlined } from "@ant-design/icons"
+import { InfoCircleOutlined, DotChartOutlined, CaretUpOutlined, ReloadOutlined } from "@ant-design/icons"
 import dayjs from "dayjs"
 import * as XLSX from 'xlsx'
 import { Link } from 'react-router-dom'
@@ -332,7 +332,7 @@ export default function Analyzer() {
                 params.append('cursor_created_at', cursor.created_at)
                 params.append('cursor_id', String(cursor.id))
             }
-            params.append('limit', '40')
+            params.append('limit', '6')
 
             const res = await fetch(`/api/v1/analysis-history?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${accessToken}` },
@@ -770,6 +770,17 @@ export default function Analyzer() {
                             Export XLSX
                         </Button>
 
+                        <Button
+                            icon={<ReloadOutlined />}
+                            onClick={() => {
+                                setHistoryQuery('')
+                                setHistorySport('')
+                                setHistoryRange(null)
+                                setHistoryConfidence([])
+                            }}
+                            title="Reset filters"
+                        />
+
                         <Popconfirm
                             title="Clear history"
                             description={historyQuery || historySport || historyRange
@@ -825,7 +836,7 @@ export default function Analyzer() {
                             onClick={() => loadHistory({ reset: false })}
                             disabled={!historyHasMore || historyLoading}
                         >
-                            {historyHasMore ? 'Load more' : 'No more'}
+                            {historyHasMore ? 'Load 6 more' : 'No more'}
                         </Button>
                     </div>
 
