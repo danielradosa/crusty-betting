@@ -138,9 +138,11 @@ async def ws_updates(ws: WebSocket):
         if v:
             await update_hub.send(ws, {"type": "version", "version": v})
 
+        # Heartbeat loop: send ping periodically so proxies/load balancers keep the WS open.
+        # We don't require client messages.
         while True:
-            # Keep the socket alive. (We don't currently need client messages.)
-            await ws.receive_text()
+            await asyncio.sleep(25)
+            await update_hub.send(ws, {"type": "ping", "ts": datetime.utcnow().isoformat()})
     except WebSocketDisconnect:
         update_hub.disconnect(ws)
     except Exception:

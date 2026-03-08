@@ -50,6 +50,7 @@ function App() {
           if (msg?.type === 'deploy' && typeof msg?.version === 'string') {
             setServerVersion(msg.version)
           }
+          // ping messages are ignored
         } catch {
           // ignore
         }
