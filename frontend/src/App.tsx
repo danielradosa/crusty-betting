@@ -34,41 +34,97 @@ function App() {
   }, [serverVersion])
 
   useEffect(() => {
-    // Connect to backend update stream.
-    // Backend sends current deployed frontend version and broadcasts when it changes.
-    try {
-      const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/updates`
-      const ws = new WebSocket(wsUrl)
-      wsRef.current = ws
+    // Connect to backend update stream w/ auto-reconnect.
+    // This makes update prompts resilient to mobile sleep, network changes, proxy timeouts, etc.
 
-      ws.onmessage = (ev) => {
+    let cancelled = false
+    let reconnectTimer: number | null = null
+    let attempt = 0
+
+    const wsUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/updates`
+
+    const clearReconnect = () => {
+      if (reconnectTimer) window.clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+
+    const scheduleReconnect = () => {
+      if (cancelled) return
+      clearReconnect()
+
+      attempt += 1
+      // Exponential backoff with jitter, capped.
+      const base = Math.min(30000, 750 * 2 ** Math.min(attempt, 6))
+      const jitter = Math.floor(Math.random() * 400)
+      const delay = base + jitter
+
+      reconnectTimer = window.setTimeout(() => {
+        connect()
+      }, delay)
+    }
+
+    const connect = () => {
+      if (cancelled) return
+
+      try {
+        // Ensure any previous socket is closed
         try {
-          const msg = JSON.parse(ev.data)
-          if (msg?.type === 'version' && typeof msg?.version === 'string') {
-            setServerVersion(msg.version)
-          }
-          if (msg?.type === 'deploy' && typeof msg?.version === 'string') {
-            setServerVersion(msg.version)
-          }
-          // ping messages are ignored
+          wsRef.current?.close()
         } catch {
           // ignore
         }
-      }
 
-      ws.onclose = () => {
-        wsRef.current = null
-      }
+        const ws = new WebSocket(wsUrl)
+        wsRef.current = ws
 
-      return () => {
-        try {
-          ws.close()
-        } catch {
-          // ignore
+        ws.onopen = () => {
+          attempt = 0
         }
+
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data)
+            if (msg?.type === 'version' && typeof msg?.version === 'string') {
+              setServerVersion(msg.version)
+            }
+            if (msg?.type === 'deploy' && typeof msg?.version === 'string') {
+              setServerVersion(msg.version)
+            }
+            // ping messages are ignored
+          } catch {
+            // ignore
+          }
+        }
+
+        ws.onerror = () => {
+          // Some environments only emit onerror (not useful details). Ensure we reconnect.
+          try {
+            ws.close()
+          } catch {
+            // ignore
+          }
+        }
+
+        ws.onclose = () => {
+          wsRef.current = null
+          scheduleReconnect()
+        }
+      } catch {
+        scheduleReconnect()
       }
-    } catch {
-      // ignore
+    }
+
+    connect()
+
+    return () => {
+      cancelled = true
+      clearReconnect()
+      try {
+        wsRef.current?.close()
+      } catch {
+        // ignore
+      }
+      wsRef.current = null
     }
   }, [])
 
